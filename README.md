@@ -16,7 +16,9 @@ iOS 9.0+
 ## 项目描述
 图片压缩使用 Luban （鲁班） —— 图片压缩工具，仿微信朋友圈压缩策略，不支持控制quality
 
-视频压缩会根据quality对width、height进行自动缩放以及bitrate计算
+视频压缩 使用硬件编码，并未使用`ffmpeg`
+
+会根据quality对width、height进行自动缩放以及bitrate计算
 
 bitrate计算公式 width * height * fps * 0.07
 
