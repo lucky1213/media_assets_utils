@@ -1,4 +1,4 @@
-group 'com.lucky1213.media_assets_utils'
+group 'com.lucky1213.media_asset_utils'
 version '1.0-SNAPSHOT'
 
 buildscript {

@@ -4,7 +4,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'dart:async';
 
-import 'package:media_assets_utils/media_assets_utils.dart';
+import 'package:media_asset_utils/media_asset_utils.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:wechat_assets_picker/wechat_assets_picker.dart';
@@ -61,16 +61,17 @@ class _MyAppState extends State<MyApp> {
       final List<AssetEntity>? assets = await AssetPicker.pickAssets(context,
           requestType: type, maxAssets: 1);
       if ((assets ?? []).isNotEmpty) {
-        file = await assets!.first.file;
-        setState(() {
-          fileSize = file!.lengthSync();
-        });
         Directory? directory;
         if (Platform.isIOS) {
           directory = await getApplicationDocumentsDirectory();
+          file = await assets!.first.originFile;
         } else {
           directory = await getExternalStorageDirectory();
+          file = await assets!.first.file;
         }
+        setState(() {
+          fileSize = file!.lengthSync();
+        });
         if (type == RequestType.video) {
           outputFile =
               File('${directory!.path}/video_${Random().nextInt(100000)}.mp4');
@@ -101,18 +102,24 @@ class _MyAppState extends State<MyApp> {
                 height: 200,
                 child: Column(
                   children: [
-                    Text('当前选择: $file, 文件大小: $fileSize'),
-                    Text('处理后: $outputFile, 文件大小: $outputFileSize'),
+                    Text(
+                        '当前选择: $file, 文件大小: ${fileSize != null ? (fileSize! / 1024 / 1024).toStringAsFixed(2) : 0}'),
+                    Text(
+                        '处理后: $outputFile, 文件大小: ${outputFileSize != null ? (outputFileSize! / 1024 / 1024).toStringAsFixed(2) : 0}'),
                   ],
                 ),
               ),
               TextButton(
                 onPressed: () async {
                   await initCompress(_, RequestType.video);
-                  outputFile = await MediaAssetsUtils.compressVideo(
-                    file!,
-                    outputFile: outputFile,
-                  );
+                  outputFile = await MediaAssetUtils.compressVideo(file!,
+                      saveToLibrary: true,
+                      thumbnailConfig: ThumbnailConfig(
+                        file: File(
+                            '${file!.parent.path}/thumbnail_${Random().nextInt(100000)}.jpg'),
+                      ), onVideoCompressProgress: (double progress) {
+                    print(progress);
+                  });
                   setState(() {
                     outputFileSize = outputFile!.lengthSync();
                   });
@@ -122,9 +129,11 @@ class _MyAppState extends State<MyApp> {
               TextButton(
                 onPressed: () async {
                   await initThumbnail(_);
-                  outputFile = await MediaAssetsUtils.getVideoThumbnail(
+                  outputFile = await MediaAssetUtils.getVideoThumbnail(
                     file!,
-                    // thumbnailFile: outputFile!,
+                    quality: 50,
+                    saveToLibrary: true,
+                    thumbnailFile: outputFile!,
                   );
                   setState(() {
                     outputFileSize = outputFile!.lengthSync();
@@ -133,15 +142,20 @@ class _MyAppState extends State<MyApp> {
                 child: Text('Get Video Thumbnail'),
               ),
               TextButton(
-                onPressed: () async {},
+                onPressed: () async {
+                  await initCompress(_, RequestType.video);
+                  final result = await MediaAssetUtils.extractMetadata(
+                      file!, MetadataKey.video_width);
+                  print(result);
+                },
                 child: Text('Get Video Metadata'),
               ),
               TextButton(
                 onPressed: () async {
                   await initCompress(_, RequestType.image);
-                  outputFile = await MediaAssetsUtils.compressImage(
+                  outputFile = await MediaAssetUtils.compressImage(
                     file!,
-                    // outputFile: outputFile,
+                    saveToLibrary: true,
                   );
                   setState(() {
                     outputFileSize = outputFile!.lengthSync();
@@ -150,8 +164,9 @@ class _MyAppState extends State<MyApp> {
                 child: Text('Compress Image'),
               ),
               TextButton(
-                onPressed: () {
-                  // MediaAssetsUtils.compressVideo(srcPath: srcPath, destPath: destPath)
+                onPressed: () async {
+                  await initCompress(_, RequestType.image);
+                  await MediaAssetUtils.saveToGallery(file!);
                 },
                 child: Text('Save To Media Store'),
               ),

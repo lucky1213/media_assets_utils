@@ -1,10 +1,11 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.lucky1213.media_assets_utils_example">
-   <application
-        android:label="media_assets_utils_example"
-        android:icon="@mipmap/ic_launcher">
+    package="com.lucky1213.media_asset_utils_example">
+    <application
+        android:label="media_asset_utils_example"
+        android:icon="@mipmap/ic_launcher"
+        android:requestLegacyExternalStorage="true">
         <activity
-            android:name=".MainActivity"
+            android:name="com.lucky1213.media_asset_utils_example.MainActivity"
             android:launchMode="singleTop"
             android:theme="@style/LaunchTheme"
             android:configChanges="orientation|keyboardHidden|keyboard|screenSize|smallestScreenSize|locale|layoutDirection|fontScale|screenLayout|density|uiMode"

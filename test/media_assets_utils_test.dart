@@ -2,7 +2,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  const MethodChannel channel = MethodChannel('media_assets_utils');
+  const MethodChannel channel = MethodChannel('media_asset_utils');
 
   TestWidgetsFlutterBinding.ensureInitialized();
 

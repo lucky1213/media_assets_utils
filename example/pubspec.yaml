@@ -1,5 +1,5 @@
-name: media_assets_utils_example
-description: Demonstrates how to use the media_assets_utils plugin.
+name: media_asset_utils_example
+description: Demonstrates how to use the media_asset_utils plugin.
 
 # The following line prevents the package from being accidentally published to
 # pub.dev using `pub publish`. This is preferred for private packages.
@@ -12,9 +12,8 @@ dependencies:
   flutter:
     sdk: flutter
 
-  media_assets_utils:
+  media_asset_utils:
     # When depending on this package from a real application you should use:
-    #   media_assets_utils: ^x.y.z
     # See https://dart.dev/tools/pub/dependencies#version-constraints
     # The example app is bundled with the plugin so we use a path dependency on
     # the parent directory to use the current plugin's version.

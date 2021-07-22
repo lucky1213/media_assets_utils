@@ -1,6 +1,6 @@
-# media_assets_utils_example
+# media_asset_utils_example
 
-Demonstrates how to use the media_assets_utils plugin.
+Demonstrates how to use the media_asset_utils plugin.
 
 ## Getting Started
 

@@ -1,7 +1,7 @@
-name: media_assets_utils
+name: media_asset_utils
 description: A new flutter plugin project.
 version: 0.0.1
-homepage:
+homepage: https://github.com/lucky1213/media_assets_utils
 
 environment:
   sdk: ">=2.12.0 <3.0.0"
@@ -27,7 +27,7 @@ flutter:
   plugin:
     platforms:
       android:
-        package: com.lucky1213.media_assets_utils
+        package: com.lucky1213.media_asset_utils
         pluginClass: MediaAssetsUtilsPlugin
       ios:
         pluginClass: MediaAssetsUtilsPlugin
