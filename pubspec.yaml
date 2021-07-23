@@ -1,6 +1,6 @@
 name: media_asset_utils
-description: A new flutter plugin project.
-version: 0.0.1
+description: Compress and save image/video native plugin (Swift/Kotlin).
+version: 0.0.3
 homepage: https://github.com/lucky1213/media_assets_utils
 
 environment:

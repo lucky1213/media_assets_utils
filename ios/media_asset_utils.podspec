@@ -5,9 +5,9 @@
 Pod::Spec.new do |s|
   s.name             = 'media_asset_utils'
   s.version          = '0.0.1'
-  s.summary          = 'A new flutter plugin project.'
+  s.summary          = 'Compress and save image/video native plugin (Swift/Kotlin).'
   s.description      = <<-DESC
-A new flutter plugin project.
+  Compress and save image/video native plugin (Swift/Kotlin).
                        DESC
   s.homepage         = 'http://example.com'
   s.license          = { :file => '../LICENSE' }

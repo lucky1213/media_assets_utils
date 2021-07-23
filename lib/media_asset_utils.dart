@@ -1,21 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:flutter/services.dart';
 
-enum MetadataKey {
-  duration,
-  bitrate,
-  video_height,
-  video_width,
-
-  // mimetype,
-  // location,
-  // video_rotation,
-}
-// 117.2267192,36.8186024
-// 116.481488,39.990464
+part 'media_info.dart';
 
 enum VideoQuality {
   // 360p
@@ -45,6 +34,15 @@ class MediaAssetUtils {
 
   static void Function(double)? _onVideoCompressProgress;
 
+  static Future<T?> _invokeMethod<T>(String method, [dynamic arguments]) async {
+    try {
+      final result = await _channel.invokeMethod(method, arguments);
+      return result;
+    } on PlatformException {
+      rethrow;
+    }
+  }
+
   static Future<File?> compressVideo(
     File file, {
     File? outputFile,
@@ -57,7 +55,7 @@ class MediaAssetUtils {
       final str = quality.toString();
       final qstr = str.substring(str.indexOf('.') + 1);
       _onVideoCompressProgress = onVideoCompressProgress;
-      final String? result = await _channel.invokeMethod('compressVideo', {
+      final String? result = await _invokeMethod('compressVideo', {
         'path': file.path,
         'outputPath': outputFile?.path,
         'saveToLibrary': saveToLibrary,
@@ -79,16 +77,12 @@ class MediaAssetUtils {
     File? outputFile,
     bool saveToLibrary = false,
   }) async {
-    try {
-      final String? result = await _channel.invokeMethod('compressImage', {
-        'path': file.path,
-        'outputPath': outputFile?.path,
-        'saveToLibrary': saveToLibrary,
-      });
-      return result == null ? null : File(result);
-    } on PlatformException {
-      rethrow;
-    }
+    final String? result = await _invokeMethod('compressImage', {
+      'path': file.path,
+      'outputPath': outputFile?.path,
+      'saveToLibrary': saveToLibrary,
+    });
+    return result == null ? null : File(result);
   }
 
   static Future<File?> getVideoThumbnail(
@@ -98,45 +92,29 @@ class MediaAssetUtils {
     bool saveToLibrary = false,
   }) async {
     assert(100 >= quality, 'quality cannot be greater than 100');
-    try {
-      final String? result = await _channel.invokeMethod('getVideoThumbnail', {
-        'path': file.path,
-        'thumbnailPath': thumbnailFile?.path,
-        'quality': quality,
-        'saveToLibrary': saveToLibrary,
-      });
-      return result == null ? null : File(result);
-    } on PlatformException {
-      rethrow;
-    }
+    final String? result = await _invokeMethod('getVideoThumbnail', {
+      'path': file.path,
+      'thumbnailPath': thumbnailFile?.path,
+      'quality': quality,
+      'saveToLibrary': saveToLibrary,
+    });
+    return result == null ? null : File(result);
   }
 
   static Future<bool?> saveToGallery(File file) async {
-    try {
-      final bool? result = await _channel.invokeMethod('saveToGallery', {
-        'path': file.path,
-      });
-      return result;
-    } on PlatformException {
-      rethrow;
-    }
+    final bool? result = await _invokeMethod('saveToGallery', {
+      'path': file.path,
+    });
+    return result;
   }
 
-  static Future<int?> extractMetadata(
+  static Future<MediaInfo> getVideoInfo(
     File file,
-    MetadataKey keyCode,
   ) async {
-    try {
-      final str = keyCode.toString();
-      final kstr = str.substring(str.indexOf('.') + 1);
-      final int? result = await _channel.invokeMethod('extractMetadata', {
-        'path': file.path,
-        'keyCode': kstr.toLowerCase(),
-      });
-      return result;
-    } on PlatformException {
-      rethrow;
-    }
+    final json = await _invokeMethod('getVideoInfo', {
+      'path': file.path,
+    });
+    return MediaInfo.fromJson(json);
   }
 
   static Future<void> _methodCallHandler(MethodCall call) {

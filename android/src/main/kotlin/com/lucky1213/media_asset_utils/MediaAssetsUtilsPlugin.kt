@@ -16,6 +16,7 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
+import org.json.JSONObject
 import top.zibin.luban.Luban
 import top.zibin.luban.OnCompressListener
 import java.io.File
@@ -219,6 +220,42 @@ class MediaAssetsUtilsPlugin: FlutterPlugin, MethodCallHandler {
                           outputFile.name
                       }
                       .launch()
+          }
+          "getVideoInfo" -> {
+              val path = call.argument<String>("path")!!
+              val file = File(path)
+              mediaMetadataRetriever = mediaMetadataRetriever ?: MediaMetadataRetriever()
+              mediaMetadataRetriever!!.setDataSource(path)
+              val durationStr = mediaMetadataRetriever!!.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
+              val title = mediaMetadataRetriever!!.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE) ?: ""
+              val author = mediaMetadataRetriever!!.extractMetadata(MediaMetadataRetriever.METADATA_KEY_AUTHOR) ?: ""
+              val widthStr = mediaMetadataRetriever!!.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)
+              val heightStr = mediaMetadataRetriever!!.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)
+              val duration = durationStr?.toInt()
+              var width = widthStr?.toInt()
+              var height = heightStr?.toInt()
+              val filesize = file.length()
+              val orientation = mediaMetadataRetriever!!.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)
+              val ori = orientation?.toIntOrNull()
+              if (ori != null && ori != 90 && ori != 270) {
+                  val tmp = width
+                  width = height
+                  height = tmp
+              }
+              val json = JSONObject()
+
+              json.put("path", path)
+              json.put("title", title)
+              json.put("author", author)
+              json.put("width", width)
+              json.put("height", height)
+              json.put("duration", duration)
+              json.put("filesize", filesize)
+              if (ori != null) {
+                  json.put("orientation", ori)
+              }
+
+              result.success(json)
           }
           "extractMetadata" -> {
               val path = call.argument<String>("path")!!

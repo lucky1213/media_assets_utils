@@ -36,7 +36,7 @@ EXTERNAL SOURCES:
 
 SPEC CHECKSUMS:
   Flutter: 434fef37c0980e73bb6479ef766c45957d4b510c
-  media_asset_utils: 620867667e4532fa6388c71a04c4b5691ce67394
+  media_asset_utils: 88bd41efdb2913bfcb58ca6a09bb97afcf35081b
   path_provider: abfe2b5c733d04e238b0d8691db0cfd63a27a93c
   permission_handler: ccb20a9fad0ee9b1314a52b70b76b473c5f8dab0
   photo_manager: 61cdd6835af271b9ad1bb533fccf71d5db02fff3

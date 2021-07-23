@@ -144,9 +144,8 @@ class _MyAppState extends State<MyApp> {
               TextButton(
                 onPressed: () async {
                   await initCompress(_, RequestType.video);
-                  final result = await MediaAssetUtils.extractMetadata(
-                      file!, MetadataKey.video_width);
-                  print(result);
+                  final result = await MediaAssetUtils.getVideoInfo(file!);
+                  print(result.toJson());
                 },
                 child: Text('Get Video Metadata'),
               ),

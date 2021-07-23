@@ -1,6 +1,6 @@
 # media_asset_utils
 
-Compress image/video as native plugin (Swift/Kotlin)
+Compress and save image/video native plugin (Swift/Kotlin)
 
 This library can works on Android and iOS.
 
@@ -14,17 +14,16 @@ Android 21+
 iOS 9.0+
 
 ## 项目描述
-图片压缩使用 Luban （鲁班） —— 图片压缩工具，仿微信朋友圈压缩策略，不支持控制quality
+1. 图片压缩使用 Luban （鲁班） —— 图片压缩工具
+    - 仿微信朋友圈压缩策略，不支持控制quality
+    
+2. 视频压缩 使用硬件编码，并未使用`ffmpeg`
+    - 根据quality对width、height进行自动缩放以及bitrate计算
+    - bitrate计算公式 width * height * fps * 0.07
 
-视频压缩 使用硬件编码，并未使用`ffmpeg`
+3. Native获取视频、图片信息 未完
 
-会根据quality对width、height进行自动缩放以及bitrate计算
-
-bitrate计算公式 width * height * fps * 0.07
-
-Native获取视频metadata
-
-保存图片、视频到系统相册 支持Android Q
+4. 保存图片、视频到系统相册 支持Android Q
 
 ## 有点忙，没空写，未完
 

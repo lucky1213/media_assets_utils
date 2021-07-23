@@ -130,34 +130,42 @@ public class SwiftMediaAssetsUtilsPlugin: NSObject, FlutterPlugin {
                 return
             }
             result(thumbnail)
-        case "extractMetadata":
+        case "getVideoInfo":
             let path: String = dict!.value(forKey: "path") as! String
-            let keyCode: String = dict!.value(forKey: "keyCode") as! String
             let source = URL(fileURLWithPath: path)
             let asset = AVURLAsset(url: source)
             guard let videoTrack = asset.tracks(withMediaType: AVMediaType.video).first else {
                 result(FlutterError(code: "ExtractMetadata", message: "Cannot find video track.", details: nil))
                 return
             }
-            
-            //            let titleItems = AVMetadataItem.metadataItems(from: asset.commonMetadata, filteredByIdentifier: .commonIdentifierLocation)
-            //            print(titleItems.first?.value)
-            var value: Any? = nil
-            switch keyCode {
-                case "duration":
-                    value = Int((CGFloat(asset.duration.value) / CGFloat(asset.duration.timescale)) * 1000)
-                case "bitrate":
-                    value = Int(videoTrack.estimatedDataRate)
-                case "video_width":
-                    value = Int(videoTrack.naturalSize.width)
-                case "video_height":
-                    value = Int(videoTrack.naturalSize.height)
-                default:
-                    result(FlutterError(code: "ExtractMetadata", message: "Unsupported the metadata.", details: nil))
-                    break
+            let title = getMetaDataByTag(asset,key: "title")
+            let author = getMetaDataByTag(asset,key: "author")
+            var degress = 0
+            var size = videoTrack.naturalSize
+            let txf = videoTrack.preferredTransform
+            if size.width == txf.tx && size.height == txf.ty {
+                degress = 0
+            } else if txf.tx == 0 && txf.ty == 0 {
+                degress = 90
+            } else if txf.tx == 0 && txf.ty == size.width {
+                degress = 180
+            } else {
+                degress = 270
             }
-            result(value)
-            break
+            size = size.applying(txf)
+            let dictionary = [
+                "path": path.replacingOccurrences(of: "file://", with: ""),
+                "title": title,
+                "author": author,
+                "width": Int(size.width),
+                "height": Int(size.height),
+                "duration": Int((CGFloat(asset.duration.value) / CGFloat(asset.duration.timescale)) * 1000),
+                "filesize": videoTrack.totalSampleDataLength,
+                "orientation": degress,
+                ] as [String : Any?]
+            let data = try! JSONSerialization.data(withJSONObject: dictionary as NSDictionary, options: [])
+            let jsonString = NSString(data: data as Data, encoding: String.Encoding.utf8.rawValue)
+            result(jsonString! as String)
         case "saveToGallery":
             let path: String = dict!.value(forKey: "path") as! String
             let url = URL(fileURLWithPath: path)
@@ -173,6 +181,15 @@ public class SwiftMediaAssetsUtilsPlugin: NSObject, FlutterPlugin {
         default:
             result(FlutterError(code: "NoImplemented", message: "Handles a call to an unimplemented method.", details: nil))
         }
+    }
+    
+    private func getMetaDataByTag(_ asset:AVAsset, key:String)->String {
+        for item in asset.commonMetadata {
+            if item.commonKey?.rawValue == key {
+                return item.stringValue ?? "";
+            }
+        }
+        return ""
     }
     
     private func createDirectory(_ url: URL) -> Void {
