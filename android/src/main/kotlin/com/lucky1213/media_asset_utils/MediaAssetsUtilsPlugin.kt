@@ -2,8 +2,10 @@ package com.lucky1213.media_asset_utils
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.media.ExifInterface
 import android.media.MediaMetadataRetriever
 import android.os.*
+import android.provider.MediaStore
 import android.text.TextUtils
 import android.util.Log
 import androidx.annotation.NonNull
@@ -19,11 +21,8 @@ import io.flutter.plugin.common.MethodChannel.Result
 import org.json.JSONObject
 import top.zibin.luban.Luban
 import top.zibin.luban.OnCompressListener
-import java.io.File
+import java.io.*
 import java.io.File.separator
-import java.io.FileInputStream
-import java.io.FileOutputStream
-import java.io.OutputStream
 import kotlin.concurrent.thread
 import kotlin.math.ceil
 
@@ -235,8 +234,8 @@ class MediaAssetsUtilsPlugin: FlutterPlugin, MethodCallHandler {
               var width = widthStr?.toInt()
               var height = heightStr?.toInt()
               val filesize = file.length()
-              val orientation = mediaMetadataRetriever!!.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)
-              val ori = orientation?.toIntOrNull()
+              val rotation = mediaMetadataRetriever!!.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)
+              val ori = rotation?.toIntOrNull()
               if (ori != null && ori != 90 && ori != 270) {
                   val tmp = width
                   width = height
@@ -251,37 +250,39 @@ class MediaAssetsUtilsPlugin: FlutterPlugin, MethodCallHandler {
               json.put("height", height)
               json.put("duration", duration)
               json.put("filesize", filesize)
-              if (ori != null) {
-                  json.put("orientation", ori)
-              }
-
-              result.success(json)
+              json.put("rotation", ori)
+              result.success(json.toString())
           }
-          "extractMetadata" -> {
+          "getImageInfo" -> {
               val path = call.argument<String>("path")!!
-              val keyCode = call.argument<String>("keyCode")!!
-              mediaMetadataRetriever = mediaMetadataRetriever ?: MediaMetadataRetriever()
-              mediaMetadataRetriever!!.setDataSource(path)
-              val value = when (keyCode) {
-                  "duration" -> {
-                      MediaMetadataRetriever.METADATA_KEY_DURATION
+              val file = File(path)
+              val exifInterface = ExifInterface(file.absolutePath)
+              val filesize = file.length()
+              var width: Int? = null
+              var height: Int? = null
+              var orientation: Int? = null
+              try {
+                  width = exifInterface.getAttributeInt(ExifInterface.TAG_IMAGE_WIDTH, 0)
+                  height = exifInterface.getAttributeInt(ExifInterface.TAG_IMAGE_LENGTH, 0)
+                  orientation = exifInterface.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
+
+                  if (orientation == ExifInterface.ORIENTATION_TRANSPOSE || orientation == ExifInterface.ORIENTATION_ROTATE_90 || orientation == ExifInterface.ORIENTATION_TRANSVERSE || orientation == ExifInterface.ORIENTATION_ROTATE_270) {
+                      val temp = width
+                      width = height
+                      height = temp
                   }
-                  "bitrate" -> {
-                      MediaMetadataRetriever.METADATA_KEY_BITRATE
-                  }
-                  "video_width" -> {
-                      MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH
-                  }
-                  "video_height" -> {
-                      MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT
-                  }
-                  else -> null
+              } catch (e: IOException) {
+
               }
-              if (value != null) {
-                  result.success(mediaMetadataRetriever!!.extractMetadata(value)?.toInt())
-              } else {
-                  result.error("ExtractMetadata", "Unsupported the metadata.", null)
-              }
+              val json = JSONObject()
+
+              json.put("path", path)
+              json.put("width", width)
+              json.put("height", height)
+              json.put("orientation", orientation)
+              json.put("filesize", filesize)
+
+              result.success(json.toString())
           }
           "getVideoThumbnail" -> {
               val path = call.argument<String>("path")!!

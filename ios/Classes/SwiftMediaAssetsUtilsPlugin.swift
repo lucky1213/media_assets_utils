@@ -140,17 +140,21 @@ public class SwiftMediaAssetsUtilsPlugin: NSObject, FlutterPlugin {
             }
             let title = getMetaDataByTag(asset,key: "title")
             let author = getMetaDataByTag(asset,key: "author")
-            var degress = 0
+            var                 rotation = 0
             var size = videoTrack.naturalSize
             let txf = videoTrack.preferredTransform
-            if size.width == txf.tx && size.height == txf.ty {
-                degress = 0
-            } else if txf.tx == 0 && txf.ty == 0 {
-                degress = 90
-            } else if txf.tx == 0 && txf.ty == size.width {
-                degress = 180
-            } else {
-                degress = 270
+            if(txf.a == 0 && txf.b == 1.0 && txf.c == -1.0 && txf.d == 0){
+                // Portrait
+                rotation = 90;
+            }else if(txf.a == 0 && txf.b == -1.0 && txf.c == 1.0 && txf.d == 0){
+                // PortraitUpsideDown
+                rotation = 270;
+            }else if(txf.a == 1.0 && txf.b == 0 && txf.c == 0 && txf.d == 1.0){
+                // LandscapeRight
+                rotation = 0;
+            }else if(txf.a == -1.0 && txf.b == 0 && txf.c == 0 && txf.d == -1.0){
+                // LandscapeLeft
+                rotation = 180;
             }
             size = size.applying(txf)
             let dictionary = [
@@ -161,8 +165,50 @@ public class SwiftMediaAssetsUtilsPlugin: NSObject, FlutterPlugin {
                 "height": Int(size.height),
                 "duration": Int((CGFloat(asset.duration.value) / CGFloat(asset.duration.timescale)) * 1000),
                 "filesize": videoTrack.totalSampleDataLength,
-                "orientation": degress,
-                ] as [String : Any?]
+                "rotation":                 rotation,
+            ] as [String : Any?]
+            let data = try! JSONSerialization.data(withJSONObject: dictionary as NSDictionary, options: [])
+            let jsonString = NSString(data: data as Data, encoding: String.Encoding.utf8.rawValue)
+            result(jsonString! as String)
+        case "getImageInfo":
+            let path: String = dict!.value(forKey: "path") as! String
+            let source = URL(fileURLWithPath: path)
+            let imageSourceRef = CGImageSourceCreateWithURL(source as CFURL, nil)
+            var width: CGFloat?
+            var height: CGFloat?
+            var orientation: NSInteger?
+            let filesize = try? source.resourceValues(forKeys: [URLResourceKey.fileSizeKey]).allValues.first?.value as? Int
+            if let imageSRef = imageSourceRef {
+                let imageInfo = CGImageSourceCopyPropertiesAtIndex(imageSRef, 0, nil)
+                if let imageP = imageInfo {
+                    let imageDict = imageP as Dictionary
+                    width = imageDict[kCGImagePropertyPixelWidth] as? CGFloat
+                    height = imageDict[kCGImagePropertyPixelHeight] as? CGFloat
+                    orientation = imageDict[kCGImagePropertyOrientation] as? NSInteger
+                    if (orientation == 5 || orientation == 6 || orientation == 7 || orientation == 8) {
+                        let temp = width
+                        width = height
+                        height = temp
+                    }
+                    //                    if (orientation == 1 || orientation == 2) {
+                    //                        degress = 0
+                    //                    } else if (orientation == 3 || orientation == 4) {
+                    //                        degress = 180
+                    //                    } else if (orientation == 6 || orientation == 5) {
+                    //                        degress = 90
+                    //                    } else if (orientation == 8 || orientation == 7) {
+                    //                        degress = 270
+                    //                    }
+                    //                    ismirror = orientation == 2 || orientation == 4 || orientation == 5 || orientation == 7
+                }
+            }
+            let dictionary = [
+                "path": path.replacingOccurrences(of: "file://", with: ""),
+                "width": width,
+                "height": height,
+                "filesize": filesize,
+                "orientation": orientation,
+            ] as [String : Any?]
             let data = try! JSONSerialization.data(withJSONObject: dictionary as NSDictionary, options: [])
             let jsonString = NSString(data: data as Data, encoding: String.Encoding.utf8.rawValue)
             result(jsonString! as String)
@@ -323,7 +369,7 @@ public class SwiftMediaAssetsUtilsPlugin: NSObject, FlutterPlugin {
         
         let manager = FileManager.default
         
-//        let paths = NSSearchPathForDirectoriesInDomains(.cachesDirectory, .userDomainMask, true)
+        //        let paths = NSSearchPathForDirectoriesInDomains(.cachesDirectory, .userDomainMask, true)
         let paths = NSTemporaryDirectory()
         var cachesDir: URL = URL(fileURLWithPath: paths).appendingPathComponent( type.rawValue + "/compress", isDirectory: true)
         

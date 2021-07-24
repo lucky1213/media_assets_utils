@@ -147,7 +147,15 @@ class _MyAppState extends State<MyApp> {
                   final result = await MediaAssetUtils.getVideoInfo(file!);
                   print(result.toJson());
                 },
-                child: Text('Get Video Metadata'),
+                child: Text('Get Video Info'),
+              ),
+              TextButton(
+                onPressed: () async {
+                  await initCompress(_, RequestType.image);
+                  final result = await MediaAssetUtils.getImageInfo(file!);
+                  print(result.toJson());
+                },
+                child: Text('Get Image Info'),
               ),
               TextButton(
                 onPressed: () async {

@@ -1,39 +1,60 @@
 part of 'media_asset_utils.dart';
 
-class MediaInfo {
+abstract class MediaInfo {
   final String? path;
-  final String? title;
-  final String? author;
   final int? width;
   final int? height;
-  final int? orientation;
   final int? filesize;
 
-  /// microsecond
-  final double? duration;
   final File? file;
 
   MediaInfo({
     required this.path,
-    this.title,
-    this.author,
     this.width,
     this.height,
-    this.orientation,
     this.filesize,
-    this.duration,
   }) : file = path == null ? null : File(path);
 
-  factory MediaInfo.fromJson(String str) =>
-      MediaInfo.fromMap(json.decode(str) as Map<String, dynamic>);
+  String toJson() => json.encode(toMap());
 
-  factory MediaInfo.fromMap(Map<String, dynamic> json) => MediaInfo(
+  Map<String, dynamic> toMap();
+}
+
+class VideoInfo extends MediaInfo {
+  final String? title;
+  final String? author;
+
+  /// microsecond
+  final double? duration;
+  final int? rotation;
+
+  VideoInfo({
+    required String path,
+    this.title,
+    this.author,
+    int? width,
+    int? height,
+    int? orientation,
+    int? filesize,
+    this.duration,
+    this.rotation,
+  }) : super(
+          path: path,
+          width: width,
+          height: height,
+          filesize: filesize,
+        );
+
+  factory VideoInfo.fromJson(String str) =>
+      VideoInfo.fromMap(json.decode(str) as Map<String, dynamic>);
+
+  factory VideoInfo.fromMap(Map<String, dynamic> json) => VideoInfo(
         path: json['path'],
         title: json['title'],
         author: json['author'],
         width: json['width'],
         height: json['height'],
-        orientation: json['orientation'],
+        rotation: json['rotation'],
         filesize: json['filesize'],
         duration: double.tryParse('${json['duration']}'),
       );
@@ -46,8 +67,43 @@ class MediaInfo {
         'author': author,
         'width': width,
         'height': height,
-        'orientation': orientation,
+        'rotation': rotation,
         'filesize': filesize,
         'duration': duration,
+      };
+}
+
+class ImageInfo extends MediaInfo {
+  final int? orientation;
+  ImageInfo({
+    required String path,
+    int? width,
+    int? height,
+    int? filesize,
+    this.orientation,
+  }) : super(
+          path: path,
+          width: width,
+          height: height,
+          filesize: filesize,
+        );
+
+  factory ImageInfo.fromJson(String str) =>
+      ImageInfo.fromMap(json.decode(str) as Map<String, dynamic>);
+
+  factory ImageInfo.fromMap(Map<String, dynamic> json) => ImageInfo(
+        path: json['path'],
+        width: json['width'],
+        height: json['height'],
+        orientation: json['orientation'],
+        filesize: json['filesize'],
+      );
+
+  Map<String, dynamic> toMap() => <String, dynamic>{
+        'path': path,
+        'width': width,
+        'height': height,
+        'filesize': filesize,
+        'orientation': orientation,
       };
 }

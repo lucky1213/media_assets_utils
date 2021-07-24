@@ -108,13 +108,22 @@ class MediaAssetUtils {
     return result;
   }
 
-  static Future<MediaInfo> getVideoInfo(
+  static Future<VideoInfo> getVideoInfo(
     File file,
   ) async {
     final json = await _invokeMethod('getVideoInfo', {
       'path': file.path,
     });
-    return MediaInfo.fromJson(json);
+    return VideoInfo.fromJson(json);
+  }
+
+  static Future<ImageInfo> getImageInfo(
+    File file,
+  ) async {
+    final json = await _invokeMethod('getImageInfo', {
+      'path': file.path,
+    });
+    return ImageInfo.fromJson(json);
   }
 
   static Future<void> _methodCallHandler(MethodCall call) {
