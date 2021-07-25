@@ -132,7 +132,12 @@ class MediaStoreUtils {
 
         private fun getApplicationName(context: Context): String {
             val applicationInfo = context.applicationInfo
-            return applicationInfo.nonLocalizedLabel.toString()
+            val stringId = applicationInfo.labelRes
+            return if (stringId == 0) {
+                applicationInfo.nonLocalizedLabel.toString()
+            } else {
+                context.getString(stringId)
+            }
         }
 
         fun getFileExtension(file: File): String {
