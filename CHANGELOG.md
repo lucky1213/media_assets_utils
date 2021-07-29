@@ -3,3 +3,4 @@
 ## [0.0.3] - Add getVideoInfo.
 ## [0.0.4] - Add getImgeInfo & Fix video rotation degress.
 ## [0.0.5] - Fix get application name.
+## [0.0.6] - Fix android video orientation.

@@ -236,10 +236,12 @@ class MediaAssetsUtilsPlugin: FlutterPlugin, MethodCallHandler {
               val filesize = file.length()
               val rotation = mediaMetadataRetriever!!.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)
               val ori = rotation?.toIntOrNull()
-              if (ori != null && ori != 90 && ori != 270) {
-                  val tmp = width
-                  width = height
-                  height = tmp
+              if (ori != null) {
+                  if (ori == 90 || ori == 270) {
+                      val tmp = width
+                      width = height
+                      height = tmp
+                  }
               }
               val json = JSONObject()
 
@@ -323,7 +325,7 @@ class MediaAssetsUtilsPlugin: FlutterPlugin, MethodCallHandler {
         try {
             mediaMetadataRetriever!!.setDataSource(path)
         } catch (e: IllegalArgumentException){
-            return null
+            throw e
         }
         val bitmap: Bitmap? = mediaMetadataRetriever!!.frameAtTime
         var format = Bitmap.CompressFormat.JPEG

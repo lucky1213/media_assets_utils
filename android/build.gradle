@@ -2,7 +2,7 @@ group 'com.lucky1213.media_asset_utils'
 version '1.0-SNAPSHOT'
 
 buildscript {
-    ext.kotlin_version = '1.5.10'
+    ext.kotlin_version = '1.5.21'
     repositories {
         google()
         jcenter()
