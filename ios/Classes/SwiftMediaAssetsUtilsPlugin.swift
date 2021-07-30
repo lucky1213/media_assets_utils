@@ -144,23 +144,10 @@ public class SwiftMediaAssetsUtilsPlugin: NSObject, FlutterPlugin {
                 }
                 let title = self.getMetaDataByTag(asset,key: "title")
                 let author = self.getMetaDataByTag(asset,key: "author")
-                var rotation = 0
-                var size = videoTrack.naturalSize
                 let txf = videoTrack.preferredTransform
-                if (txf.a == 0 && txf.b == 1.0 && txf.c == -1.0 && txf.d == 0) {
-                    // Portrait
-                    rotation = 90;
-                } else if (txf.a == 0 && txf.b == -1.0 && txf.c == 1.0 && txf.d == 0){
-                    // PortraitUpsideDown
-                    rotation = 270;
-                } else if (txf.a == 1.0 && txf.b == 0 && txf.c == 0 && txf.d == 1.0){
-                    // LandscapeRight
-                    rotation = 0;
-                } else if (txf.a == -1.0 && txf.b == 0 && txf.c == 0 && txf.d == -1.0){
-                    // LandscapeLeft
-                    rotation = 180;
-                }
-                size = size.applying(txf)
+                let rotation = self.getVideoRotation(txf)
+                let size = videoTrack.naturalSize.applying(txf)
+                
                 let dictionary = [
                     "path": path.replacingOccurrences(of: "file://", with: ""),
                     "title": title,
@@ -240,6 +227,24 @@ public class SwiftMediaAssetsUtilsPlugin: NSObject, FlutterPlugin {
         }
     }
     
+    private func getVideoRotation(_ txf: CGAffineTransform) -> Int {
+        var rotation = 0
+        if (txf.a == 0 && txf.b == 1.0 && txf.c == -1.0 && txf.d == 0) {
+            // Portrait
+            rotation = 90;
+        } else if (txf.a == 0 && txf.b == -1.0 && txf.c == 1.0 && txf.d == 0){
+            // PortraitUpsideDown
+            rotation = 270;
+        } else if (txf.a == 1.0 && txf.b == 0 && txf.c == 0 && txf.d == 1.0){
+            // LandscapeRight
+            rotation = 0;
+        } else if (txf.a == -1.0 && txf.b == 0 && txf.c == 0 && txf.d == -1.0){
+            // LandscapeLeft
+            rotation = 180;
+        }
+        return rotation
+    }
+    
     private func getMetaDataByTag(_ asset:AVAsset, key:String)->String {
         for item in asset.commonMetadata {
             if item.commonKey?.rawValue == key {
@@ -300,8 +305,8 @@ public class SwiftMediaAssetsUtilsPlugin: NSObject, FlutterPlugin {
         
         let bitrate = videoTrack.estimatedDataRate
         let videoSize = videoTrack.naturalSize
-        var width = videoSize.width
-        var height = videoSize.height
+        var width = abs(videoSize.width)
+        var height = abs(videoSize.height)
         
         // 码率小于164kb/s
         if (bitrate < 1351680) {

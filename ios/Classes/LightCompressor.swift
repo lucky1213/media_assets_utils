@@ -24,14 +24,14 @@ public enum CompressionResult {
 // Compression Interruption Wrapper
 public class Compression {
     public init() {}
-
+    
     public var cancel = false
 }
 
 // Compression Error Messages
 public struct CompressionError: LocalizedError {
     public let title: String
-
+    
     init(title: String = "Compression Error") {
         self.title = title
     }
@@ -57,13 +57,13 @@ public class Configuration {
 
 //@available(iOS 11.0, *)
 public struct LightCompressor {
-
+    
     public init() {}
-
+    
     private let MIN_BITRATE = Float(2000000)
     private let MIN_HEIGHT = 640.0
     private let MIN_WIDTH = 360.0
-
+    
     /**
      * This function compresses a given [source] video file and writes the compressed video file at
      * [destination]
@@ -80,27 +80,27 @@ public struct LightCompressor {
      * @param [completion] to return completion status that can be [onStart], [onSuccess], [onFailure],
      * and if the compression was [onCancelled]
      */
-
+    
     public func compressVideo(source: URL,
                               destination: URL,
                               progressQueue: DispatchQueue,
                               progressHandler: ((Progress) -> ())?,
                               configuration: Configuration,
                               completion: @escaping (CompressionResult) -> ()) -> Compression {
-
+        
         var frameCount = 0
         let compressionOperation = Compression()
-
+        
         // Compression started
         completion(.onStart)
-
+        
         let videoAsset = AVURLAsset(url: source)
         guard let videoTrack = videoAsset.tracks(withMediaType: AVMediaType.video).first else {
             let error = CompressionError(title: "Cannot find video track")
             completion(.onFailure(error))
             return Compression()
         }
-
+        
         let bitrate = videoTrack.estimatedDataRate
         // Check for a min video bitrate before compression
         if configuration.isMinBitRateEnabled && bitrate <= MIN_BITRATE {
@@ -108,7 +108,7 @@ public struct LightCompressor {
             completion(.onFailure(error))
             return Compression()
         }
-
+        
         // Handle new width and height values
         let videoSize = videoTrack.naturalSize
         let newWidth: Int
@@ -121,6 +121,8 @@ public struct LightCompressor {
             newWidth = configuration.videoWidth!
             newHeight = configuration.videoHeight!
         }
+        // rotation
+        let rotation = getVideoRotation(videoTrack.preferredTransform)
         
         // Total Frames
         let durationInSeconds = videoAsset.duration.seconds
@@ -129,26 +131,39 @@ public struct LightCompressor {
         
         // Generate a bitrate based on desired quality
         let newBitrate = configuration.videoBitrate ?? getBitrate(bitrate: bitrate, quality: configuration.quality)
-
+        
         // Progress
         let totalUnits = Int64(totalFrames)
         let progress = Progress(totalUnitCount: totalUnits)
-
+        
         // Setup video writer input
         let videoWriterInput = AVAssetWriterInput(mediaType: AVMediaType.video, outputSettings: getVideoWriterSettings(bitrate: newBitrate, width: newWidth, height: newHeight))
         videoWriterInput.expectsMediaDataInRealTime = true
-        videoWriterInput.transform = videoTrack.preferredTransform
-
+        var transform = videoTrack.preferredTransform
+        if (rotation == 90) {
+            // 顺时针旋转90°
+            transform = CGAffineTransform(translationX: CGFloat(newHeight), y: 0.0).rotated(by: .pi / 2)
+        } else if (rotation == 180) {
+            // 顺时针旋转180°
+            transform = CGAffineTransform(translationX: CGFloat(newWidth), y: CGFloat(newHeight)).rotated(by: .pi)
+        } else if (rotation == 270) {
+            // 顺时针旋转270°
+            transform = CGAffineTransform(translationX: 0.0, y: CGFloat(newWidth)).rotated(by: .pi / 2 * 3)
+        }
+        videoWriterInput.transform = transform
+        
+        
+        
         let videoWriter = try! AVAssetWriter(outputURL: destination, fileType: AVFileType.mp4)
-        // videoWriter.shouldOptimizeForNetworkUse = true
+        videoWriter.shouldOptimizeForNetworkUse = true
         videoWriter.add(videoWriterInput)
-
+        
         // Setup video reader output
         let videoReaderSettings:[String : AnyObject] = [
             kCVPixelBufferPixelFormatTypeKey as String: Int(kCVPixelFormatType_420YpCbCr8BiPlanarVideoRange) as AnyObject
         ]
         let videoReaderOutput = AVAssetReaderTrackOutput(track: videoTrack, outputSettings: videoReaderSettings)
-
+        
         var videoReader: AVAssetReader!
         do{
             videoReader = try AVAssetReader(asset: videoAsset)
@@ -157,11 +172,11 @@ public struct LightCompressor {
             let compressionError = CompressionError(title: error.localizedDescription)
             completion(.onFailure(compressionError))
         }
-
+        
         videoReader.add(videoReaderOutput)
         
         let audioTrack = videoAsset.tracks(withMediaType: AVMediaType.audio).first
-
+        
         //setup audio writer
         let audioReaderSettings: [String: AnyObject] = [
             AVFormatIDKey : kAudioFormatMPEG4AAC as AnyObject,
@@ -187,16 +202,16 @@ public struct LightCompressor {
         }
         
         videoWriter.startWriting()
-
+        
         //start writing from video reader
         videoReader.startReading()
         videoWriter.startSession(atSourceTime: CMTime.zero)
         let processingQueue = DispatchQueue(label: "processingQueue1")
-
+        
         var isFirstBuffer = true
         videoWriterInput.requestMediaDataWhenReady(on: processingQueue, using: {() -> Void in
             while videoWriterInput.isReadyForMoreMediaData {
-
+                
                 // Observe any cancellation
                 if compressionOperation.cancel {
                     videoReader.cancelReading()
@@ -204,16 +219,16 @@ public struct LightCompressor {
                     completion(.onCancelled)
                     return
                 }
-
+                
                 // Update progress based on number of processed frames
                 frameCount += 1
                 if let handler = progressHandler {
                     progress.completedUnitCount = Int64(frameCount)
                     progressQueue.async { handler(progress) }
                 }
-
+                
                 let sampleBuffer: CMSampleBuffer? = videoReaderOutput.copyNextSampleBuffer()
-
+                
                 if videoReader.status == .reading && sampleBuffer != nil {
                     videoWriterInput.append(sampleBuffer!)
                 } else {
@@ -225,7 +240,7 @@ public struct LightCompressor {
                                 audioReader?.startReading()
                                 videoWriter.startSession(atSourceTime: CMTime.zero)
                                 let processingQueue = DispatchQueue(label: "processingQueue2")
-
+                                
                                 audioWriterInput.requestMediaDataWhenReady(on: processingQueue, using: {() -> Void in
                                     while audioWriterInput.isReadyForMoreMediaData {
                                         let sampleBuffer: CMSampleBuffer? = audioReaderOutput?.copyNextSampleBuffer()
@@ -238,11 +253,11 @@ public struct LightCompressor {
                                             audioWriterInput.append(sampleBuffer!)
                                         } else {
                                             audioWriterInput.markAsFinished()
-
+                                            
                                             videoWriter.finishWriting(completionHandler: {() -> Void in
                                                 completion(.onSuccess(destination))
                                             })
-
+                                            
                                         }
                                     }
                                 })
@@ -258,6 +273,24 @@ public struct LightCompressor {
         })
         
         return compressionOperation
+    }
+    
+    private func getVideoRotation(_ txf: CGAffineTransform) -> Int {
+        var rotation = 0
+        if (txf.a == 0 && txf.b == 1.0 && txf.c == -1.0 && txf.d == 0) {
+            // Portrait
+            rotation = 90;
+        } else if (txf.a == 0 && txf.b == -1.0 && txf.c == 1.0 && txf.d == 0){
+            // PortraitUpsideDown
+            rotation = 270;
+        } else if (txf.a == 1.0 && txf.b == 0 && txf.c == 0 && txf.d == 1.0){
+            // LandscapeRight
+            rotation = 0;
+        } else if (txf.a == -1.0 && txf.b == 0 && txf.c == 0 && txf.d == -1.0){
+            // LandscapeLeft
+            rotation = 180;
+        }
+        return rotation
     }
     
     private func getBitrate(bitrate: Float, quality: VideoQuality) -> Int {
