@@ -210,21 +210,34 @@ public class SwiftMediaAssetsUtilsPlugin: NSObject, FlutterPlugin {
                     result(jsonString! as String)
                 }
             }
-        case "saveToGallery":
-            let path: String = dict!.value(forKey: "path") as! String
-            let url = URL(fileURLWithPath: path)
-            let pathExtension = url.pathExtension.lowercased()
-            
-            if (imageExtension.contains(pathExtension)) {
-                library.save(imageAtURL: url)
-                result(true)
-            } else if (videoExtension.contains(pathExtension)) {
-                library.save(videoAtURL: url)
-                result(true)
+        case "saveFileToGallery":
+          let path: String = dict!.value(forKey: "path") as! String
+          saveFileToGallery(path)
+          result(true)
+        case "saveImageToGallery":
+            guard let imageData = (dict!["data"] as? FlutterStandardTypedData)?.data,
+                        let image = UIImage(data: imageData)
+                        else { return }
+            guard let path = image.storeImageToFile(generatePath(type: DirectoryType.pictures)) else {
+                result(false)
+                return
             }
+          saveFileToGallery(path)
+          result(true)
         default:
             result(FlutterError(code: "NoImplemented", message: "Handles a call to an unimplemented method.", details: nil))
         }
+    }
+
+    private func saveFileToGallery(_ path: String) ->Void {
+      let url = URL(fileURLWithPath: path)
+      let pathExtension = url.pathExtension.lowercased()
+      
+      if (imageExtension.contains(pathExtension)) {
+          library.save(imageAtURL: url)
+      } else if (videoExtension.contains(pathExtension)) {
+          library.save(videoAtURL: url)
+      }
     }
     
     private func getVideoRotation(_ txf: CGAffineTransform) -> Int {
@@ -387,7 +400,7 @@ public class SwiftMediaAssetsUtilsPlugin: NSObject, FlutterPlugin {
         
         //        let paths = NSSearchPathForDirectoriesInDomains(.cachesDirectory, .userDomainMask, true)
         let paths = NSTemporaryDirectory()
-        var cachesDir: URL = URL(fileURLWithPath: paths).appendingPathComponent( type.rawValue + "/compress", isDirectory: true)
+        var cachesDir: URL = URL(fileURLWithPath: paths).appendingPathComponent( type.rawValue, isDirectory: true)
         
         if (!manager.fileExists(atPath: cachesDir.path)) {
             try! manager.createDirectory(atPath: cachesDir.path, withIntermediateDirectories: true, attributes: nil)

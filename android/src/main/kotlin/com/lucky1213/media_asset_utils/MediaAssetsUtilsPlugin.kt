@@ -297,7 +297,7 @@ class MediaAssetsUtilsPlugin: FlutterPlugin, MethodCallHandler {
                   result.error("VideoThumbnail", e.message, null)
               }
           }
-          "saveToGallery" -> {
+          "saveFileToGallery" -> {
               val path = call.argument<String>("path") ?: return
               thread {
                   try {
@@ -312,7 +312,26 @@ class MediaAssetsUtilsPlugin: FlutterPlugin, MethodCallHandler {
                       }
                   }
               }
-
+          }
+          "saveImageToGallery" -> {
+              val data = call.argument<String>("data") ?: return
+              thread {
+                  try {
+                    val srcFile = File(MediaStoreUtils.generateTempPath(applicationContext, DirectoryType.PICTURES.value, extension = ".jpg"))
+                    val fos = FileOutputStream(srcFile)
+                    bmp.compress(Bitmap.CompressFormat.JPEG, quality, fos)
+                    fos.flush()
+                    fos.close()
+                    MediaStoreUtils.insert(applicationContext, srcFile)
+                    Handler(Looper.getMainLooper()).post {
+                        result.success(true)
+                    }
+                  } catch (e: Exception) {
+                      Handler(Looper.getMainLooper()).post {
+                          result.error("SaveToGallery", e.message, null)
+                      }
+                  }
+              }
           }
           else -> {
               result.error("NoImplemented", "Handles a call to an unimplemented method.", null)

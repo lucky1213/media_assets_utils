@@ -5,3 +5,4 @@
 ## [0.0.5] - Fix get application name.
 ## [0.0.6] - Fix android video orientation.
 ## [0.0.7] - Fix ios video transform rotated.
+## [0.0.8] - Add the save image bytes to gallery.

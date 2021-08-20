@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/services.dart';
 
@@ -101,10 +102,19 @@ class MediaAssetUtils {
     return result == null ? null : File(result);
   }
 
-  static Future<bool?> saveToGallery(File file) async {
-    final bool? result = await _invokeMethod('saveToGallery', {
-      'path': file.path,
-    });
+  static Future<bool?> saveToGallery<T>(T data) async {
+    assert(data is File || data is Uint8List,
+        'data can only be File and Uint8List');
+    bool? result;
+    if (data is File) {
+      result = await _invokeMethod('saveFileToGallery', {
+        'path': data.path,
+      });
+    } else {
+      result = await _invokeMethod('saveImageToGallery', {
+        'data': data,
+      });
+    }
     return result;
   }
 
