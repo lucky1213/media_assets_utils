@@ -319,10 +319,12 @@ class MediaAssetsUtilsPlugin: FlutterPlugin, MethodCallHandler {
                   try {
                     val srcFile = File(MediaStoreUtils.generateTempPath(applicationContext, DirectoryType.PICTURES.value, extension = ".jpg"))
                     val fos = FileOutputStream(srcFile)
+                    val bmp = BitmapFactory.decodeByteArray(data, 0, data.size)
                     bmp.compress(Bitmap.CompressFormat.JPEG, quality, fos)
                     fos.flush()
                     fos.close()
                     MediaStoreUtils.insert(applicationContext, srcFile)
+                    bmp.recycle()
                     Handler(Looper.getMainLooper()).post {
                         result.success(true)
                     }
