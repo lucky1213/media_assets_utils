@@ -313,28 +313,28 @@ class MediaAssetsUtilsPlugin: FlutterPlugin, MethodCallHandler {
                   }
               }
           }
-          "saveImageToGallery" -> {
-              val data = call.argument<String>("data") ?: return
-              thread {
-                  try {
-                    val srcFile = File(MediaStoreUtils.generateTempPath(applicationContext, DirectoryType.PICTURES.value, extension = ".jpg"))
-                    val fos = FileOutputStream(srcFile)
-                    val bmp = BitmapFactory.decodeByteArray(data, 0, data.size)
-                    bmp.compress(Bitmap.CompressFormat.JPEG, quality, fos)
-                    fos.flush()
-                    fos.close()
-                    MediaStoreUtils.insert(applicationContext, srcFile)
-                    bmp.recycle()
-                    Handler(Looper.getMainLooper()).post {
-                        result.success(true)
-                    }
-                  } catch (e: Exception) {
-                      Handler(Looper.getMainLooper()).post {
-                          result.error("SaveToGallery", e.message, null)
-                      }
-                  }
-              }
-          }
+          // "saveImageToGallery" -> {
+          //     val data = call.argument<String>("data") ?: return
+          //     thread {
+          //         try {
+          //           val srcFile = File(MediaStoreUtils.generateTempPath(applicationContext, DirectoryType.PICTURES.value, extension = ".jpg"))
+          //           val fos = FileOutputStream(srcFile)
+          //           val bmp = BitmapFactory.decodeByteArray(data, 0, data.size)
+          //           bmp.compress(Bitmap.CompressFormat.JPEG, quality, fos)
+          //           fos.flush()
+          //           fos.close()
+          //           MediaStoreUtils.insert(applicationContext, srcFile)
+          //           bmp.recycle()
+          //           Handler(Looper.getMainLooper()).post {
+          //               result.success(true)
+          //           }
+          //         } catch (e: Exception) {
+          //             Handler(Looper.getMainLooper()).post {
+          //                 result.error("SaveToGallery", e.message, null)
+          //             }
+          //         }
+          //     }
+          // }
           else -> {
               result.error("NoImplemented", "Handles a call to an unimplemented method.", null)
           }
