@@ -1,12 +1,11 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'dart:async';
-
 import 'package:media_asset_utils/media_asset_utils.dart';
+import 'package:media_asset_utils_example/permission_utils.dart';
 import 'package:path_provider/path_provider.dart';
-import 'package:permission_handler/permission_handler.dart';
 import 'package:wechat_assets_picker/wechat_assets_picker.dart';
 
 void main() {
@@ -30,10 +29,15 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> initThumbnail(BuildContext context) async {
-    final PermissionStatus status = await Permission.storage.request();
-    if (status.isGranted) {
-      final List<AssetEntity>? assets = await AssetPicker.pickAssets(context,
-          requestType: RequestType.video, maxAssets: 1);
+    final bool isGranted = await GGPermissionUtil.album();
+    if (isGranted) {
+      final List<AssetEntity>? assets = await AssetPicker.pickAssets(
+        context,
+        pickerConfig: AssetPickerConfig(
+          requestType: RequestType.video,
+          maxAssets: 1,
+        ),
+      );
       if ((assets ?? []).isNotEmpty) {
         file = await assets!.first.file;
         setState(() {
@@ -43,10 +47,10 @@ class _MyAppState extends State<MyApp> {
         if (Platform.isIOS) {
           directory = await getApplicationDocumentsDirectory();
         } else {
-          directory = await getExternalStorageDirectory();
+          directory = (await getExternalStorageDirectories())!.first;
         }
-        outputFile = File(
-            '${directory!.path}/thumbnail_${Random().nextInt(100000)}.jpg');
+        outputFile =
+            File('${directory.path}/thumbnail_${Random().nextInt(100000)}.jpg');
         return;
       } else {
         throw Exception("No files selected");
@@ -56,17 +60,22 @@ class _MyAppState extends State<MyApp> {
   }
 
   Future<void> initCompress(BuildContext context, RequestType type) async {
-    final PermissionStatus status = await Permission.storage.request();
-    if (status.isGranted) {
-      final List<AssetEntity>? assets = await AssetPicker.pickAssets(context,
-          requestType: type, maxAssets: 1);
+    final bool isGranted = await GGPermissionUtil.album();
+    if (isGranted) {
+      final List<AssetEntity>? assets = await AssetPicker.pickAssets(
+        context,
+        pickerConfig: AssetPickerConfig(
+          requestType: type,
+          maxAssets: 1,
+        ),
+      );
       if ((assets ?? []).isNotEmpty) {
         Directory? directory;
         if (Platform.isIOS) {
           directory = await getApplicationDocumentsDirectory();
           file = await assets!.first.originFile;
         } else {
-          directory = await getExternalStorageDirectory();
+          directory = (await getExternalStorageDirectories())!.first;
           file = await assets!.first.file;
         }
         setState(() {
@@ -74,10 +83,10 @@ class _MyAppState extends State<MyApp> {
         });
         if (type == RequestType.video) {
           outputFile =
-              File('${directory!.path}/video_${Random().nextInt(100000)}.mp4');
+              File('${directory.path}/video_${Random().nextInt(100000)}.mp4');
         } else {
           outputFile =
-              File('${directory!.path}/image_${Random().nextInt(100000)}.jpg');
+              File('${directory.path}/image_${Random().nextInt(100000)}.jpg');
         }
         return;
       } else {
@@ -112,14 +121,14 @@ class _MyAppState extends State<MyApp> {
               TextButton(
                 onPressed: () async {
                   await initCompress(_, RequestType.video);
-                  outputFile = await MediaAssetUtils.compressVideo(file!,
-                      saveToLibrary: true,
-                      thumbnailConfig: ThumbnailConfig(
-                        file: File(
-                            '${file!.parent.path}/thumbnail_${Random().nextInt(100000)}.jpg'),
-                      ), onVideoCompressProgress: (double progress) {
-                    print(progress);
-                  });
+                  outputFile = await MediaAssetUtils.compressVideo(
+                    file!,
+                    saveToLibrary: true,
+                    thumbnailConfig: ThumbnailConfig(),
+                    onVideoCompressProgress: (double progress) {
+                      print(progress);
+                    },
+                  );
                   setState(() {
                     outputFileSize = outputFile!.lengthSync();
                   });

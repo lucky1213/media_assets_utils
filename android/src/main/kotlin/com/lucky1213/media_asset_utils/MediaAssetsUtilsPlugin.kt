@@ -4,14 +4,15 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.media.ExifInterface
 import android.media.MediaMetadataRetriever
+import android.net.Uri
 import android.os.*
-import android.provider.MediaStore
 import android.text.TextUtils
 import android.util.Log
 import androidx.annotation.NonNull
 import com.abedelazizshe.lightcompressorlibrary.CompressionListener
 import com.abedelazizshe.lightcompressorlibrary.VideoCompressor
 import com.abedelazizshe.lightcompressorlibrary.VideoQuality
+import com.abedelazizshe.lightcompressorlibrary.config.AppSpecificStorageConfiguration
 import com.abedelazizshe.lightcompressorlibrary.config.Configuration
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.MethodCall
@@ -22,7 +23,7 @@ import org.json.JSONObject
 import top.zibin.luban.Luban
 import top.zibin.luban.OnCompressListener
 import java.io.*
-import java.io.File.separator
+import java.nio.channels.FileChannel
 import kotlin.concurrent.thread
 import kotlin.math.ceil
 
@@ -68,15 +69,16 @@ class MediaAssetsUtilsPlugin: FlutterPlugin, MethodCallHandler {
               val path = call.argument<String>("path")!!
               val quality = VideoOutputQuality.valueOf(call.argument<String>("quality")?.toUpperCase() ?: "MEDIUM")
               val tempPath = call.argument<String>("outputPath")
-              val outputPath = tempPath ?: MediaStoreUtils.generateTempPath(applicationContext, DirectoryType.PICTURES.value, ".mp4")
-              val file = File(outputPath)
+              val outputPath = tempPath ?: MediaStoreUtils.generateTempPath(applicationContext, DirectoryType.MOVIES.value, ".mp4")
+              val outFile = File(outputPath)
+              val file = File(path)
 
               val saveToLibrary = call.argument<Boolean>("saveToLibrary") ?: false
               val storeThumbnail = call.argument<Boolean>("storeThumbnail") ?: true
               val thumbnailPath = call.argument<String>("thumbnailPath")
               val thumbnailQuality = call.argument<Int>("thumbnailQuality") ?: 100
               // 文件小于1M
-              if (File(path).length() < 1048576) {
+              if (file.length() < 1048576) {
                   result.success(path)
                   return
               }
@@ -121,66 +123,76 @@ class MediaAssetsUtilsPlugin: FlutterPlugin, MethodCallHandler {
                   }
               }
 
-              if (!file.parentFile!!.exists()) {
-                  file.parentFile!!.mkdir()
+              if (!outFile.parentFile!!.exists()) {
+                  outFile.parentFile!!.mkdir()
               }
 
+              Log.i("outFile", outFile.path)
               Log.i("OutputSize", "width=$width, height=$height")
               VideoCompressor.start(
-                      srcPath = path,
-                      destPath = outputPath,
-                      listener = object : CompressionListener {
-                          override fun onProgress(percent: Float) {
+                  context = applicationContext, // => This is required
+                  uris =  listOf(Uri.fromFile(file)),
+                  appSpecificStorageConfiguration = AppSpecificStorageConfiguration(
+                      videoName = outFile.nameWithoutExtension,
+                      // subFolderName = DirectoryType.MOVIES.value,
+                  ),
+                          configureWith = Configuration(
+                      quality = quality.level,
+                      isMinBitrateCheckEnabled = true,
+              keepOriginalResolution = false,
+              videoWidth = width.toDouble(),
+              videoHeight = height.toDouble(),
+                      videoBitrateInMbps = (width * height * 25 * 0.07).toInt()
+              ),
+              listener = object : CompressionListener {
+                  override fun onProgress(index: Int, percent: Float) {
+                      // Update UI with progress value
+                      Handler(Looper.getMainLooper()).post {
+                          Log.i("onVideoCompressProgress", percent.toString())
+                          channel.invokeMethod("onVideoCompressProgress", if (percent > 100) { 100 } else { percent})
+                      }
+                  }
+
+                  override fun onStart(index: Int) {
+                      // Compression start
+                  }
+
+                  override fun onSuccess(index: Int, size: Long, path: String?) {
+
+                      thread {
+                          try {
+                              val tempFile = File(path!!)
+                              copyFile(tempFile, outFile)
+                              if (storeThumbnail) {
+                                  storeThumbnailToFile(outputPath, thumbnailPath, thumbnailQuality, false)
+                              }
                               Handler(Looper.getMainLooper()).post {
-                                  Log.i("onVideoCompressProgress", percent.toString())
-                                  channel.invokeMethod("onVideoCompressProgress", if (percent > 100) { 100 } else { percent})
+                                  result.success(outputPath)
                               }
-                          }
-
-                          override fun onStart() {
-                              // Compression start
-                          }
-
-                          override fun onSuccess() {
-                              thread {
-                                  try {
-                                      val file = File(outputPath)
-                                      if (storeThumbnail) {
-                                          storeThumbnailToFile(outputPath, thumbnailPath, thumbnailQuality, false)
-                                      }
-                                      Handler(Looper.getMainLooper()).post {
-                                          result.success(outputPath)
-                                      }
-                                      if (saveToLibrary) {
-                                          MediaStoreUtils.insert(applicationContext, file)
-                                      }
-                                  } catch (e: Exception) {
-                                      Handler(Looper.getMainLooper()).post {
-                                          result.error("VideoCompress", e.message, null)
-                                      }
-                                  }
+                              if (saveToLibrary) {
+                                  MediaStoreUtils.insert(applicationContext, outFile)
                               }
-                          }
 
-                          override fun onFailure(failureMessage: String) {
-                              result.error("VideoCompress", failureMessage, null)
-                          }
-
-                          override fun onCancelled() {
+                          } catch (e: Exception) {
                               Handler(Looper.getMainLooper()).post {
-                                  result.error("VideoCompress", "The transcoding operation was canceled.", null)
+                                  result.error("VideoCompress", e.message, null)
                               }
                           }
+                      }
+                  }
 
-                      },
-                      configureWith = Configuration(
-                              quality = quality.level,
-                              isMinBitRateEnabled = false,
-                              keepOriginalResolution = false,
-                              videoWidth = width.toDouble(),
-                              videoHeight = height.toDouble(),
-                              videoBitrate = (width * height * 25 * 0.07).toInt()
-                      )
+                  override fun onFailure(index: Int, failureMessage: String) {
+                      result.error("VideoCompress", failureMessage, null)
+                  }
+
+                  override fun onCancelled(index: Int) {
+                      Handler(Looper.getMainLooper()).post {
+                          result.error("VideoCompress", "The transcoding operation was canceled.", null)
+                      }
+                  }
+
+              },
+
               )
           }
           "compressImage" -> {
@@ -368,7 +380,7 @@ class MediaAssetsUtilsPlugin: FlutterPlugin, MethodCallHandler {
         val file = if (thumbnailPath != null) {
             File(thumbnailPath)
         } else {
-            File(MediaStoreUtils.generateTempPath(applicationContext, DirectoryType.PICTURES.value, extension = ".jpg", filename = File(path).nameWithoutExtension+"_thumbnail"))
+            File(MediaStoreUtils.generateTempPath(applicationContext, DirectoryType.MOVIES.value, extension = ".jpg", filename = File(path).nameWithoutExtension+"_thumbnail"))
         }
         if (file.exists()) {
             file.delete()
@@ -386,6 +398,14 @@ class MediaAssetsUtilsPlugin: FlutterPlugin, MethodCallHandler {
             return file.absolutePath
         } catch (e: Exception) {
             throw RuntimeException(e)
+        }
+    }
+
+
+    private fun copyFile(src: File, dest: File) {
+        FileInputStream(src).channel.use { sourceChannel ->
+            FileOutputStream(dest).channel
+                .use { destChannel -> destChannel.transferFrom(sourceChannel, 0, sourceChannel.size()) }
         }
     }
 

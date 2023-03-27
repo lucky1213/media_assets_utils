@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:flutter/services.dart';
 
@@ -46,7 +45,7 @@ class MediaAssetUtils {
 
   static Future<File?> compressVideo(
     File file, {
-    File? outputFile,
+    String? videoName,
     bool saveToLibrary = false,
     VideoQuality quality = VideoQuality.very_low,
     void Function(double)? onVideoCompressProgress,
@@ -58,7 +57,7 @@ class MediaAssetUtils {
       _onVideoCompressProgress = onVideoCompressProgress;
       final String? result = await _invokeMethod('compressVideo', {
         'path': file.path,
-        'outputPath': outputFile?.path,
+        'videoName': videoName,
         'saveToLibrary': saveToLibrary,
         'quality': qstr.toUpperCase(),
         'storeThumbnail': thumbnailConfig != null,

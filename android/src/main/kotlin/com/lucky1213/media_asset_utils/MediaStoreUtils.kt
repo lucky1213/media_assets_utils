@@ -25,7 +25,7 @@ class MediaStoreUtils {
             } else {
                 ""
             }
-            val outputDir = File(context.getExternalFilesDir(directory), getApplicationName(context) + sub)
+            val outputDir = File(context.getExternalFilesDir(directory), sub)
             Log.i("TempPathExists", outputDir.exists().toString())
             if (!outputDir.exists()) {
                 outputDir.mkdir()
@@ -40,9 +40,9 @@ class MediaStoreUtils {
                 ""
             }
             return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                directory + File.separator + getApplicationName(context) + sub
+                directory + File.separator + sub
             } else {
-                val outputDir = File(Environment.getExternalStoragePublicDirectory(directory), getApplicationName(context) + sub)
+                val outputDir = File(Environment.getExternalStoragePublicDirectory(directory), sub)
                 if (!outputDir.exists()) {
                     outputDir.mkdir()
                 }
@@ -102,7 +102,12 @@ class MediaStoreUtils {
                     values.put(MediaStore.Images.ImageColumns.ORIENTATION, 0)
                 }
             } else {
-                values.put(MediaStore.MediaColumns.DURATION, getVideoDuration(file.absolutePath))
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    values.put(
+                        MediaStore.MediaColumns.DURATION,
+                        getVideoDuration(file.absolutePath)
+                    )
+                }
             }
             val uri = contentResolver.insert(
                     if (isVideo) MediaStore.Video.Media.EXTERNAL_CONTENT_URI else MediaStore.Images.Media.EXTERNAL_CONTENT_URI,

@@ -393,7 +393,7 @@ public class SwiftMediaAssetsUtilsPlugin: NSObject, FlutterPlugin {
         return nil
     }
     
-    private func generatePath(type: DirectoryType) -> String {
+    private func generatePath(type: DirectoryType, filename: String? = nil) -> String {
         let ext = type == .movies ? ".mp4" : ".jpg"
         
         let manager = FileManager.default
@@ -405,8 +405,14 @@ public class SwiftMediaAssetsUtilsPlugin: NSObject, FlutterPlugin {
         if (!manager.fileExists(atPath: cachesDir.path)) {
             try! manager.createDirectory(atPath: cachesDir.path, withIntermediateDirectories: true, attributes: nil)
         }
-        let time = Int(Date().timeIntervalSince1970);
-        cachesDir.appendPathComponent(String(time) + ext)
+        var name: String
+        if (filename != nil) {
+            name = filename!;
+        } else {
+            name = String(Int(Date().timeIntervalSince1970));
+        }
+        cachesDir.appendPathComponent(name + ext)
+        
         return cachesDir.path
     }
 }
