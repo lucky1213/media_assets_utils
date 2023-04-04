@@ -94,6 +94,10 @@ class PermissionUtil {
           }
         }
       }
+    } else if (Platform.isIOS) {
+      if (permission == Permission.videos || permission == Permission.audio) {
+        permission = Permission.photos;
+      }
     }
     final PermissionStatus status = await permission.request();
     bool allowed = false;
