@@ -19,3 +19,5 @@
 ## [0.1.0] - Remove android save image bytes to gallery.
 
 ## [0.1.1] - Upgrade android video compress library & Add Android 13 example
+
+## [0.1.2] - Upgrade android compileSdkVersion 34

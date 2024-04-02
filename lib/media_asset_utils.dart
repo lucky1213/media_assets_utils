@@ -22,8 +22,10 @@ enum VideoQuality {
 class ThumbnailConfig {
   final int quality;
   final File? file;
+  final bool saveToLibrary;
   const ThumbnailConfig({
     this.quality = 100,
+    this.saveToLibrary = false,
     this.file,
   });
 }
@@ -61,6 +63,7 @@ class MediaAssetUtils {
         'saveToLibrary': saveToLibrary,
         'quality': qstr.toUpperCase(),
         'storeThumbnail': thumbnailConfig != null,
+        'thumbnailSaveToLibrary': thumbnailConfig?.saveToLibrary ?? false,
         'thumbnailPath': thumbnailConfig?.file?.path,
         'thumbnailQuality': thumbnailConfig?.quality ?? 100,
       });
@@ -110,9 +113,10 @@ class MediaAssetUtils {
         'path': data.path,
       });
     } else {
-      result = await _invokeMethod('saveImageToGallery', {
-        'data': data,
-      });
+      // result = await _invokeMethod('saveImageToGallery', {
+      //   'data': data,
+      // });
+      throw UnimplementedError();
     }
     return result;
   }

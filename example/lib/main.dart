@@ -108,7 +108,7 @@ class _MyAppState extends State<MyApp> {
             children: [
               Container(
                 width: double.infinity,
-                height: 200,
+                constraints: BoxConstraints(minHeight: 200),
                 child: Column(
                   children: [
                     Text(
@@ -124,6 +124,7 @@ class _MyAppState extends State<MyApp> {
                   outputFile = await MediaAssetUtils.compressVideo(
                     file!,
                     saveToLibrary: true,
+                    quality: VideoQuality.very_low,
                     thumbnailConfig: ThumbnailConfig(),
                     onVideoCompressProgress: (double progress) {
                       print(progress);

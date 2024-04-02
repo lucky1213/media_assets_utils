@@ -8,7 +8,6 @@ import android.net.Uri
 import android.os.*
 import android.text.TextUtils
 import android.util.Log
-import androidx.annotation.NonNull
 import com.abedelazizshe.lightcompressorlibrary.CompressionListener
 import com.abedelazizshe.lightcompressorlibrary.VideoCompressor
 import com.abedelazizshe.lightcompressorlibrary.VideoQuality
@@ -23,7 +22,6 @@ import org.json.JSONObject
 import top.zibin.luban.Luban
 import top.zibin.luban.OnCompressListener
 import java.io.*
-import java.nio.channels.FileChannel
 import kotlin.concurrent.thread
 import kotlin.math.ceil
 
@@ -54,20 +52,19 @@ class MediaAssetsUtilsPlugin: FlutterPlugin, MethodCallHandler {
   /// when the Flutter Engine is detached from the Activity
   private lateinit var channel : MethodChannel
   private lateinit var applicationContext : Context
-  private var mediaMetadataRetriever: MediaMetadataRetriever? = null
 
-  override fun onAttachedToEngine(@NonNull flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
+  override fun onAttachedToEngine(flutterPluginBinding: FlutterPlugin.FlutterPluginBinding) {
     applicationContext = flutterPluginBinding.applicationContext
     channel = MethodChannel(flutterPluginBinding.binaryMessenger, "media_asset_utils")
     channel.setMethodCallHandler(this)
   }
 
-  override fun onMethodCall(@NonNull call: MethodCall, @NonNull result: Result) {
+  override fun onMethodCall(call: MethodCall, result: Result) {
     Log.i("AndroidCameraView", "onMethodCall: ${call.method} ${call.arguments}")
       when (call.method) {
           "compressVideo" -> {
               val path = call.argument<String>("path")!!
-              val quality = VideoOutputQuality.valueOf(call.argument<String>("quality")?.toUpperCase() ?: "MEDIUM")
+              val quality = VideoOutputQuality.valueOf(call.argument<String>("quality")?.uppercase() ?: "MEDIUM")
               val tempPath = call.argument<String>("outputPath")
               val outputPath = tempPath ?: MediaStoreUtils.generateTempPath(applicationContext, DirectoryType.MOVIES.value, ".mp4")
               val outFile = File(outputPath)
@@ -75,6 +72,7 @@ class MediaAssetsUtilsPlugin: FlutterPlugin, MethodCallHandler {
 
               val saveToLibrary = call.argument<Boolean>("saveToLibrary") ?: false
               val storeThumbnail = call.argument<Boolean>("storeThumbnail") ?: true
+              val thumbnailSaveToLibrary = call.argument<Boolean>("thumbnailSaveToLibrary") ?: false
               val thumbnailPath = call.argument<String>("thumbnailPath")
               val thumbnailQuality = call.argument<Int>("thumbnailQuality") ?: 100
               // 文件小于1M
@@ -82,17 +80,17 @@ class MediaAssetsUtilsPlugin: FlutterPlugin, MethodCallHandler {
                   result.success(path)
                   return
               }
-              mediaMetadataRetriever = mediaMetadataRetriever ?: MediaMetadataRetriever()
+              val mediaMetadataRetriever = MediaMetadataRetriever()
               try {
-                  mediaMetadataRetriever!!.setDataSource(path)
+                  mediaMetadataRetriever.setDataSource(path)
               } catch (e: IllegalArgumentException) {
                   result.error("VideoCompress", e.message, null)
                   return
               }
 
-              val bitrate = mediaMetadataRetriever!!.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE)?.toInt()
-              var width = mediaMetadataRetriever!!.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)?.toInt()
-              var height = mediaMetadataRetriever!!.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)?.toInt()
+              val bitrate = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE)?.toInt()
+              var width = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)?.toInt()
+              var height = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)?.toInt()
               if (bitrate == null || width == null || height == null) {
                   result.error("VideoCompress", "Cannot find video track.", null)
                   return
@@ -123,6 +121,8 @@ class MediaAssetsUtilsPlugin: FlutterPlugin, MethodCallHandler {
                   }
               }
 
+              mediaMetadataRetriever.release()
+
               if (!outFile.parentFile!!.exists()) {
                   outFile.parentFile!!.mkdir()
               }
@@ -132,19 +132,21 @@ class MediaAssetsUtilsPlugin: FlutterPlugin, MethodCallHandler {
               VideoCompressor.start(
                   context = applicationContext, // => This is required
                   uris =  listOf(Uri.fromFile(file)),
+                  isStreamable = false,
                   appSpecificStorageConfiguration = AppSpecificStorageConfiguration(
-                      videoName = outFile.nameWithoutExtension,
+//                      videoName = outFile.nameWithoutExtension,
                       // subFolderName = DirectoryType.MOVIES.value,
                   ),
-                          configureWith = Configuration(
+                  configureWith = Configuration(
                       quality = quality.level,
                       isMinBitrateCheckEnabled = true,
-              keepOriginalResolution = false,
-              videoWidth = width.toDouble(),
-              videoHeight = height.toDouble(),
+                      keepOriginalResolution = false,
+                      videoWidth = width.toDouble(),
+                      videoHeight = height.toDouble(),
+                      videoNames = listOf(outFile.nameWithoutExtension),
                       videoBitrateInMbps = (width * height * 25 * 0.07).toInt()
-              ),
-              listener = object : CompressionListener {
+                    ),
+                listener = object : CompressionListener {
                   override fun onProgress(index: Int, percent: Float) {
                       // Update UI with progress value
                       Handler(Looper.getMainLooper()).post {
@@ -164,7 +166,7 @@ class MediaAssetsUtilsPlugin: FlutterPlugin, MethodCallHandler {
                               val tempFile = File(path!!)
                               copyFile(tempFile, outFile)
                               if (storeThumbnail) {
-                                  storeThumbnailToFile(outputPath, thumbnailPath, thumbnailQuality, false)
+                                  storeThumbnailToFile(outputPath, thumbnailPath, thumbnailQuality, thumbnailSaveToLibrary)
                               }
                               Handler(Looper.getMainLooper()).post {
                                   result.success(outputPath)
@@ -191,7 +193,7 @@ class MediaAssetsUtilsPlugin: FlutterPlugin, MethodCallHandler {
                       }
                   }
 
-              },
+                },
 
               )
           }
@@ -210,7 +212,7 @@ class MediaAssetsUtilsPlugin: FlutterPlugin, MethodCallHandler {
                       .ignoreBy(100)
                       .setTargetDir(outputFile.parent)
                       .setFocusAlpha(outputFile.extension == "png")
-                      .filter { path -> !(TextUtils.isEmpty(path) || path.toLowerCase().endsWith(".gif")) }
+                      .filter { path -> !(TextUtils.isEmpty(path) || path.lowercase().endsWith(".gif")) }
                       .setCompressListener(object : OnCompressListener {
                           override fun onStart() {
                               Log.i("ImageCompress", "onStart")
@@ -235,18 +237,21 @@ class MediaAssetsUtilsPlugin: FlutterPlugin, MethodCallHandler {
           "getVideoInfo" -> {
               val path = call.argument<String>("path")!!
               val file = File(path)
-              mediaMetadataRetriever = mediaMetadataRetriever ?: MediaMetadataRetriever()
-              mediaMetadataRetriever!!.setDataSource(path)
-              val durationStr = mediaMetadataRetriever!!.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
-              val title = mediaMetadataRetriever!!.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE) ?: ""
-              val author = mediaMetadataRetriever!!.extractMetadata(MediaMetadataRetriever.METADATA_KEY_AUTHOR) ?: ""
-              val widthStr = mediaMetadataRetriever!!.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)
-              val heightStr = mediaMetadataRetriever!!.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)
+              val mediaMetadataRetriever =  MediaMetadataRetriever()
+              mediaMetadataRetriever.setDataSource(path)
+              val durationStr = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_DURATION)
+              val title = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_TITLE) ?: ""
+              val author = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_AUTHOR) ?: ""
+              val widthStr = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)
+              val heightStr = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)
               val duration = durationStr?.toInt()
               var width = widthStr?.toInt()
               var height = heightStr?.toInt()
               val filesize = file.length()
-              val rotation = mediaMetadataRetriever!!.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)
+              val rotation = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION)
+
+              mediaMetadataRetriever.release()
+
               val ori = rotation?.toIntOrNull()
               if (ori != null) {
                   if (ori == 90 || ori == 270) {
@@ -272,9 +277,9 @@ class MediaAssetsUtilsPlugin: FlutterPlugin, MethodCallHandler {
               val file = File(path)
               val exifInterface = ExifInterface(file.absolutePath)
               val filesize = file.length()
-              var width: Int? = null
-              var height: Int? = null
-              var orientation: Int? = null
+              var width: Int?
+              var height: Int?
+              val orientation: Int?
               try {
                   width = exifInterface.getAttributeInt(ExifInterface.TAG_IMAGE_WIDTH, 0)
                   height = exifInterface.getAttributeInt(ExifInterface.TAG_IMAGE_LENGTH, 0)
@@ -285,18 +290,18 @@ class MediaAssetsUtilsPlugin: FlutterPlugin, MethodCallHandler {
                       width = height
                       height = temp
                   }
+                  val json = JSONObject()
+
+                  json.put("path", path)
+                  json.put("width", width)
+                  json.put("height", height)
+                  json.put("orientation", orientation)
+                  json.put("filesize", filesize)
+
+                  result.success(json.toString())
               } catch (e: IOException) {
-
+                  result.error("getImageInfo", e.message, null)
               }
-              val json = JSONObject()
-
-              json.put("path", path)
-              json.put("width", width)
-              json.put("height", height)
-              json.put("orientation", orientation)
-              json.put("filesize", filesize)
-
-              result.success(json.toString())
           }
           "getVideoThumbnail" -> {
               val path = call.argument<String>("path")!!
@@ -354,13 +359,14 @@ class MediaAssetsUtilsPlugin: FlutterPlugin, MethodCallHandler {
   }
 
     private fun storeThumbnailToFile(path: String, thumbnailPath: String? = null, quality: Int = 100, saveToLibrary: Boolean = true) : String? {
-        mediaMetadataRetriever = mediaMetadataRetriever ?: MediaMetadataRetriever()
+        val mediaMetadataRetriever = MediaMetadataRetriever()
         try {
-            mediaMetadataRetriever!!.setDataSource(path)
+            mediaMetadataRetriever.setDataSource(File(path).absolutePath)
         } catch (e: IllegalArgumentException){
             throw e
         }
-        val bitmap: Bitmap? = mediaMetadataRetriever!!.frameAtTime
+        val bitmap: Bitmap? = mediaMetadataRetriever.getFrameAtTime(0 * 1000, MediaMetadataRetriever.OPTION_CLOSEST)
+        mediaMetadataRetriever.release()
         var format = Bitmap.CompressFormat.JPEG
         if (thumbnailPath != null) {
             val outputDir = File(thumbnailPath).parentFile!!
@@ -368,12 +374,16 @@ class MediaAssetsUtilsPlugin: FlutterPlugin, MethodCallHandler {
                 outputDir.mkdir()
             }
             val extension = MediaStoreUtils.getFileExtension(thumbnailPath)
-            format = if (extension == "jpg" || extension == "jpeg") {
-                Bitmap.CompressFormat.JPEG
-            } else if (extension == "png") {
-                Bitmap.CompressFormat.PNG
-            } else {
-                Bitmap.CompressFormat.JPEG
+            format = when (extension) {
+                "jpg", "jpeg" -> {
+                    Bitmap.CompressFormat.JPEG
+                }
+                "png" -> {
+                    Bitmap.CompressFormat.PNG
+                }
+                else -> {
+                    Bitmap.CompressFormat.JPEG
+                }
             }
         }
 
@@ -409,7 +419,7 @@ class MediaAssetsUtilsPlugin: FlutterPlugin, MethodCallHandler {
         }
     }
 
-  override fun onDetachedFromEngine(@NonNull binding: FlutterPlugin.FlutterPluginBinding) {
+  override fun onDetachedFromEngine(binding: FlutterPlugin.FlutterPluginBinding) {
     channel.setMethodCallHandler(null)
   }
 }

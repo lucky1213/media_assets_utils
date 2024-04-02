@@ -10,9 +10,9 @@ This library can works on Android and iOS.
 
 各平台最低要求
 
-Android 21+
+Android 24+
 
-iOS 9.0+
+iOS 12.0+
 
 ## 项目描述
 
@@ -23,15 +23,15 @@ iOS 9.0+
    - 根据 quality 对 width、height 进行自动缩放以及 bitrate 计算
    - bitrate 计算公式 width _ height _ fps \* 0.07
 
-3. Native 获取视频、图片信息 未完
+3. Native 获取视频、图片信息
 
-4. 保存图片、视频到系统相册 支持 Android Q
+4. 保存图片、视频到系统相册
 
 ## 配置
 
 ### Android
 
-由于库依赖于 Kotlin 版本`1.7.10`，请更改项目级别的 build.gradle 文件来确保项目中的最低 kotlin 版本。
+由于库依赖于 Kotlin 版本`1.8.22`，请更改项目级别的 build.gradle 文件来确保项目中的最低 kotlin 版本。
 
 在 AndroidManifest.xml 中添加如下权限：
 
