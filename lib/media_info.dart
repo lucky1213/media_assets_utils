@@ -1,7 +1,7 @@
 part of 'media_asset_utils.dart';
 
 abstract class MediaInfo {
-  final String? path;
+  final String path;
   final int? width;
   final int? height;
   final int? filesize;
@@ -13,7 +13,7 @@ abstract class MediaInfo {
     this.width,
     this.height,
     this.filesize,
-  }) : file = path == null ? null : File(path);
+  }) : file = File(path);
 
   String toJson() => json.encode(toMap());
 

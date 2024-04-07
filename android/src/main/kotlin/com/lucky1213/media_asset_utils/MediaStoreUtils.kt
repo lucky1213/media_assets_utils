@@ -28,7 +28,7 @@ class MediaStoreUtils {
             val outputDir = File(context.getExternalFilesDir(directory), sub)
             Log.i("TempPathExists", outputDir.exists().toString())
             if (!outputDir.exists()) {
-                outputDir.mkdir()
+                outputDir.mkdirs()
             }
             return outputDir.absolutePath + File.separator + (filename ?: System.currentTimeMillis().toString()) + extension
         }
@@ -44,7 +44,7 @@ class MediaStoreUtils {
             } else {
                 val outputDir = File(Environment.getExternalStoragePublicDirectory(directory), sub)
                 if (!outputDir.exists()) {
-                    outputDir.mkdir()
+                    outputDir.mkdirs()
                 }
                 outputDir.absolutePath
             }

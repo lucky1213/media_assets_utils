@@ -60,7 +60,7 @@ class MediaAssetsUtilsPlugin: FlutterPlugin, MethodCallHandler {
   }
 
   override fun onMethodCall(call: MethodCall, result: Result) {
-    Log.i("AndroidCameraView", "onMethodCall: ${call.method} ${call.arguments}")
+    Log.i("MediaAssetsUtils", "onMethodCall: ${call.method} ${call.arguments}")
       when (call.method) {
           "compressVideo" -> {
               val path = call.argument<String>("path")!!
@@ -124,7 +124,7 @@ class MediaAssetsUtilsPlugin: FlutterPlugin, MethodCallHandler {
               mediaMetadataRetriever.release()
 
               if (!outFile.parentFile!!.exists()) {
-                  outFile.parentFile!!.mkdir()
+                  outFile.parentFile!!.mkdirs()
               }
 
               Log.i("outFile", outFile.path)
@@ -205,7 +205,7 @@ class MediaAssetsUtilsPlugin: FlutterPlugin, MethodCallHandler {
               val outputFile = File(outputPath)
               val saveToLibrary = call.argument<Boolean>("saveToLibrary") ?: false
               if (!outputFile.parentFile!!.exists()) {
-                  outputFile.parentFile!!.mkdir()
+                  outputFile.parentFile!!.mkdirs()
               }
               Luban.with(applicationContext)
                       .load(srcFile)
@@ -371,7 +371,7 @@ class MediaAssetsUtilsPlugin: FlutterPlugin, MethodCallHandler {
         if (thumbnailPath != null) {
             val outputDir = File(thumbnailPath).parentFile!!
             if (!outputDir.exists()) {
-                outputDir.mkdir()
+                outputDir.mkdirs()
             }
             val extension = MediaStoreUtils.getFileExtension(thumbnailPath)
             format = when (extension) {

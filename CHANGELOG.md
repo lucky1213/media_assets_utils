@@ -21,3 +21,5 @@
 ## [0.1.1] - Upgrade android video compress library & Add Android 13 example
 
 ## [0.1.2] - Upgrade android compileSdkVersion 34
+
+## [0.1.3] - Fix compressImage outputFile

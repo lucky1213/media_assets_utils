@@ -44,11 +44,12 @@ class _MyAppState extends State<MyApp> {
           fileSize = file!.lengthSync();
         });
         Directory? directory;
-        if (Platform.isIOS) {
-          directory = await getApplicationDocumentsDirectory();
-        } else {
-          directory = (await getExternalStorageDirectories())!.first;
-        }
+        // if (Platform.isIOS) {
+
+        // } else {
+        //   directory = (await getExternalStorageDirectories())!.first;
+        // }
+        directory = await getApplicationDocumentsDirectory();
         outputFile =
             File('${directory.path}/thumbnail_${Random().nextInt(100000)}.jpg');
         return;
@@ -71,11 +72,13 @@ class _MyAppState extends State<MyApp> {
       );
       if ((assets ?? []).isNotEmpty) {
         Directory? directory;
+
+        directory = await getApplicationDocumentsDirectory();
         if (Platform.isIOS) {
-          directory = await getApplicationDocumentsDirectory();
+          // directory = await getApplicationDocumentsDirectory();
           file = await assets!.first.originFile;
         } else {
-          directory = (await getExternalStorageDirectories())!.first;
+          // directory = (await getExternalStorageDirectories())!.first;
           file = await assets!.first.file;
         }
         setState(() {
@@ -85,8 +88,8 @@ class _MyAppState extends State<MyApp> {
           outputFile =
               File('${directory.path}/video_${Random().nextInt(100000)}.mp4');
         } else {
-          outputFile =
-              File('${directory.path}/image_${Random().nextInt(100000)}.jpg');
+          Directory('${directory.path}/abdd/12233').createSync(recursive: true);
+          outputFile = File('${directory.path}/abdd/12233/image_1.jpg');
         }
         return;
       } else {
@@ -170,10 +173,13 @@ class _MyAppState extends State<MyApp> {
               TextButton(
                 onPressed: () async {
                   await initCompress(_, RequestType.image);
-                  outputFile = await MediaAssetUtils.compressImage(
+                  print(outputFile);
+                  final result = await MediaAssetUtils.compressImage(
                     file!,
                     saveToLibrary: true,
+                    outputFile: outputFile,
                   );
+                  print(result);
                   setState(() {
                     outputFileSize = outputFile!.lengthSync();
                   });
