@@ -209,7 +209,7 @@ class MediaAssetsUtilsPlugin: FlutterPlugin, MethodCallHandler {
               }
               Luban.with(applicationContext)
                       .load(srcFile)
-                      .ignoreBy(100)
+                      .ignoreBy(0)
                       .setTargetDir(outputFile.parent)
                       .setFocusAlpha(outputFile.extension == "png")
                       .filter { path -> !(TextUtils.isEmpty(path) || path.lowercase().endsWith(".gif")) }

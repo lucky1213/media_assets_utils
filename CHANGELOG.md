@@ -23,3 +23,5 @@
 ## [0.1.2] - Upgrade android compileSdkVersion 34
 
 ## [0.1.3] - Fix compressImage outputFile
+
+## [0.1.4] - Remove compressImage ignoreBy
