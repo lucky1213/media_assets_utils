@@ -25,3 +25,5 @@
 ## [0.1.3] - Fix compressImage outputFile
 
 ## [0.1.4] - Remove compressImage ignoreBy
+
+## [0.2.0] - Re publish
