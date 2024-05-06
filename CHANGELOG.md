@@ -29,3 +29,5 @@
 ## [0.2.0] - Re publish
 
 ## [0.2.1] - Fix android gif getImageInfo
+
+## [0.2.2] - Fix android getImageInfo error

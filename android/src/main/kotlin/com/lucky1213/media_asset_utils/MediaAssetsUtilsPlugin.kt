@@ -275,27 +275,34 @@ class MediaAssetsUtilsPlugin: FlutterPlugin, MethodCallHandler {
           "getImageInfo" -> {
               val path = call.argument<String>("path")!!
               val file = File(path)
-              val exifInterface = ExifInterface(file.absolutePath)
               val filesize = file.length()
-              var width: Int?
-              var height: Int?
-              val orientation: Int?
+              var width = 0
+              var height = 0
+              var orientation = 0
+              val extension = MediaStoreUtils.getFileExtension(path)
+              if (extension == "jpg" || extension == "jpeg") {
+                  try {
+                      val exifInterface = ExifInterface(file.absolutePath)
+                      width = exifInterface.getAttributeInt(ExifInterface.TAG_IMAGE_WIDTH, 0)
+                      height = exifInterface.getAttributeInt(ExifInterface.TAG_IMAGE_LENGTH, 0)
+                      orientation = exifInterface.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
+                      if (orientation == ExifInterface.ORIENTATION_TRANSPOSE || orientation == ExifInterface.ORIENTATION_ROTATE_90 || orientation == ExifInterface.ORIENTATION_TRANSVERSE || orientation == ExifInterface.ORIENTATION_ROTATE_270) {
+                          val temp = width
+                          width = height
+                          height = temp
+                      }
+                  }  catch (_: IOException) {
+                  }
+              }
+
+
               try {
-                  width = exifInterface.getAttributeInt(ExifInterface.TAG_IMAGE_WIDTH, 0)
-                  height = exifInterface.getAttributeInt(ExifInterface.TAG_IMAGE_LENGTH, 0)
                   if (width == 0 || height == 0) {
                       val opts = BitmapFactory.Options()
                       opts.inJustDecodeBounds = true
                       BitmapFactory.decodeFile(path, opts)
                       width = opts.outWidth
                       height = opts.outHeight
-                  }
-                  orientation = exifInterface.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
-
-                  if (orientation == ExifInterface.ORIENTATION_TRANSPOSE || orientation == ExifInterface.ORIENTATION_ROTATE_90 || orientation == ExifInterface.ORIENTATION_TRANSVERSE || orientation == ExifInterface.ORIENTATION_ROTATE_270) {
-                      val temp = width
-                      width = height
-                      height = temp
                   }
                   val json = JSONObject()
 
