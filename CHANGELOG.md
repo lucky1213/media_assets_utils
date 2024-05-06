@@ -27,3 +27,5 @@
 ## [0.1.4] - Remove compressImage ignoreBy
 
 ## [0.2.0] - Re publish
+
+## [0.2.1] - Fix android gif getImageInfo

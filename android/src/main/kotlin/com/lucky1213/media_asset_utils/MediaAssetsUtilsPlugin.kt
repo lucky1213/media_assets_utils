@@ -2,6 +2,7 @@ package com.lucky1213.media_asset_utils
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.media.ExifInterface
 import android.media.MediaMetadataRetriever
 import android.net.Uri
@@ -42,7 +43,6 @@ enum class VideoOutputQuality(val value:Int, val level: VideoQuality){
     HIGH(1280, VideoQuality.HIGH),
     VERY_HIGH(1920, VideoQuality.VERY_HIGH)
 }
-
 
 /** MediaAssetsUtilsPlugin */
 class MediaAssetsUtilsPlugin: FlutterPlugin, MethodCallHandler {
@@ -283,6 +283,13 @@ class MediaAssetsUtilsPlugin: FlutterPlugin, MethodCallHandler {
               try {
                   width = exifInterface.getAttributeInt(ExifInterface.TAG_IMAGE_WIDTH, 0)
                   height = exifInterface.getAttributeInt(ExifInterface.TAG_IMAGE_LENGTH, 0)
+                  if (width == 0 || height == 0) {
+                      val opts = BitmapFactory.Options()
+                      opts.inJustDecodeBounds = true
+                      BitmapFactory.decodeFile(path, opts)
+                      width = opts.outWidth
+                      height = opts.outHeight
+                  }
                   orientation = exifInterface.getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
 
                   if (orientation == ExifInterface.ORIENTATION_TRANSPOSE || orientation == ExifInterface.ORIENTATION_ROTATE_90 || orientation == ExifInterface.ORIENTATION_TRANSVERSE || orientation == ExifInterface.ORIENTATION_ROTATE_270) {
