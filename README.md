@@ -31,7 +31,7 @@ iOS 12.0+
 
 ### Android
 
-由于库依赖于 Kotlin 版本`1.8.22`，请更改项目级别的 build.gradle 文件来确保项目中的最低 kotlin 版本。
+由于库依赖于 Kotlin 版本`1.7.10`，请更改项目级别的 build.gradle 文件来确保项目中的最低 kotlin 版本。
 
 在 AndroidManifest.xml 中添加如下权限：
 
