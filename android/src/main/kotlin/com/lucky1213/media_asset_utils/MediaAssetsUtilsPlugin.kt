@@ -92,15 +92,9 @@ class MediaAssetsUtilsPlugin: FlutterPlugin, MethodCallHandler {
               var width = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)?.toInt()
               var height = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)?.toInt()
               if (bitrate == null || width == null || height == null) {
+                  mediaMetadataRetriever.release()
                   result.error("VideoCompress", "Cannot find video track.", null)
                   return
-              } else {
-                  // 码率小于164kb/s
-                  if (bitrate < 1351680) {
-                      result.success(path)
-                      return
-                  }
-                  Log.i("BITRATE", bitrate.toString())
               }
               when {
                   width >= quality.value || height >= quality.value -> {
@@ -120,6 +114,15 @@ class MediaAssetsUtilsPlugin: FlutterPlugin, MethodCallHandler {
                       }
                   }
               }
+
+             var videoBitrateInMbps = (width * height * 30 * 0.1).toInt()
+
+             if (bitrate < videoBitrateInMbps) {
+                 mediaMetadataRetriever.release()
+                 result.success(path)
+                 return
+             }
+             Log.i("BITRATE", bitrate.toString())
 
               mediaMetadataRetriever.release()
 
@@ -144,7 +147,7 @@ class MediaAssetsUtilsPlugin: FlutterPlugin, MethodCallHandler {
                       videoWidth = width.toDouble(),
                       videoHeight = height.toDouble(),
                       videoNames = listOf(outFile.nameWithoutExtension),
-                      videoBitrateInMbps = (width * height * 25 * 0.07).toInt()
+                      videoBitrateInMbps = videoBitrateInMbps
                     ),
                 listener = object : CompressionListener {
                   override fun onProgress(index: Int, percent: Float) {

@@ -24,8 +24,8 @@ class VideoInfo extends MediaInfo {
   final String? title;
   final String? author;
 
-  /// microsecond
-  final double? duration;
+  /// milliseconds
+  final int? duration;
   final int? rotation;
 
   VideoInfo({
@@ -56,7 +56,7 @@ class VideoInfo extends MediaInfo {
         height: json['height'],
         rotation: json['rotation'],
         filesize: json['filesize'],
-        duration: double.tryParse('${json['duration']}'),
+        duration: json['duration'],
       );
 
   String toJson() => json.encode(toMap());

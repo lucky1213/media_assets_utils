@@ -31,3 +31,5 @@
 ## [0.2.1] - Fix android gif getImageInfo
 
 ## [0.2.2] - Fix android getImageInfo error
+
+## [0.2.3] - Optimize Android video compression bitrate
