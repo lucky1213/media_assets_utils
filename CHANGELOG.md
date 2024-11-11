@@ -35,3 +35,5 @@
 ## [0.2.3] - Optimize Android video compression bitrate
 
 ## [0.2.4] - Fix Android video compression & Kotlin version
+
+## [0.2.5] - Optimize Android video compression bitrate

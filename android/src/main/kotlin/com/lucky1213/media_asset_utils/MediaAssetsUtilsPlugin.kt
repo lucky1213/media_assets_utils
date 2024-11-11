@@ -14,6 +14,7 @@ import com.abedelazizshe.lightcompressorlibrary.VideoCompressor
 import com.abedelazizshe.lightcompressorlibrary.VideoQuality
 import com.abedelazizshe.lightcompressorlibrary.config.AppSpecificStorageConfiguration
 import com.abedelazizshe.lightcompressorlibrary.config.Configuration
+import com.abedelazizshe.lightcompressorlibrary.utils.CompressorUtils
 import io.flutter.embedding.engine.plugins.FlutterPlugin
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
@@ -25,6 +26,7 @@ import top.zibin.luban.OnCompressListener
 import java.io.*
 import kotlin.concurrent.thread
 import kotlin.math.ceil
+import kotlin.math.min
 
 
 enum class DirectoryType(val value: String) {
@@ -89,22 +91,24 @@ class MediaAssetsUtilsPlugin: FlutterPlugin, MethodCallHandler {
               }
 
               val bitrate = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_BITRATE)?.toInt()
-              var width = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)?.toInt()
-              var height = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)?.toInt()
-              if (bitrate == null || width == null || height == null) {
+              val originWidth = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH)?.toInt()
+              val originHeight = mediaMetadataRetriever.extractMetadata(MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT)?.toInt()
+              if (bitrate == null || originWidth == null || originHeight == null) {
                   mediaMetadataRetriever.release()
                   result.error("VideoCompress", "Cannot find video track.", null)
                   return
               }
+              var width = originWidth
+              var height = originHeight
               when {
-                  width >= quality.value || height >= quality.value -> {
+                  originWidth >= quality.value || originHeight >= quality.value -> {
                       when {
-                          width > height -> {
-                              height = ceil(height * quality.value / width.toDouble()).toInt()
+                          originWidth > originHeight -> {
+                              height = ceil(originHeight * quality.value / originWidth.toDouble()).toInt()
                               width = quality.value
                           }
-                          height > width -> {
-                              width = ceil(width * quality.value / height.toDouble()).toInt()
+                          originHeight > originWidth -> {
+                              width = ceil(originWidth * quality.value / originHeight.toDouble()).toInt()
                               height = quality.value
                           }
                           else -> {
@@ -115,9 +119,8 @@ class MediaAssetsUtilsPlugin: FlutterPlugin, MethodCallHandler {
                   }
               }
 
-             var videoBitrateInMbps = (width * height * 30 * 0.1).toInt()
-
-             if (bitrate < videoBitrateInMbps) {
+             val videoBitrateInMbps = min(2000000, (width * height * 30 * 0.1).toInt())
+             if (bitrate < videoBitrateInMbps && width == originWidth && height == originHeight) {
                  mediaMetadataRetriever.release()
                  result.success(path)
                  return
@@ -142,12 +145,11 @@ class MediaAssetsUtilsPlugin: FlutterPlugin, MethodCallHandler {
                   ),
                   configureWith = Configuration(
                       quality = quality.level,
-                      isMinBitrateCheckEnabled = true,
+                      isMinBitrateCheckEnabled = false,
                       keepOriginalResolution = false,
                       videoWidth = width.toDouble(),
                       videoHeight = height.toDouble(),
                       videoNames = listOf(outFile.nameWithoutExtension),
-                      videoBitrateInMbps = videoBitrateInMbps
                     ),
                 listener = object : CompressionListener {
                   override fun onProgress(index: Int, percent: Float) {
